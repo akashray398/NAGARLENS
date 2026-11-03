@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: nagarlens_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nagarlens_db}
+      POSTGRES_USER: ${POSTGRES_USER:-nagarlens_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required. Copy infrastructure/docker/.env.example to infrastructure/docker/.env and set POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - nagarlens_pgdata:/var/lib/postgresql/data
+      - ./init-postgis.sql:/docker-entrypoint-initdb.d/init-postgis.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-nagarlens_user} -d $${POSTGRES_DB:-nagarlens_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: "../../backend"
+      dockerfile: Dockerfile
+    container_name: nagarlens_backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-nagarlens_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required. Copy infrastructure/docker/.env.example to infrastructure/docker/.env and set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nagarlens_db}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-nagarlens_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required. Copy infrastructure/docker/.env.example to infrastructure/docker/.env and set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nagarlens_db}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY environment variable is required. Copy infrastructure/docker/.env.example to infrastructure/docker/.env and set SECRET_KEY}
+      CORS_ORIGINS: "${CORS_ORIGINS:-[\"http://localhost\", \"http://localhost:8000\", \"http://localhost:3000\"]}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  nagarlens_pgdata:
+    driver: local

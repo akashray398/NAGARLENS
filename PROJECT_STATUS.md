@@ -1,8 +1,8 @@
 # NAGARLENS — Project Status & Roadmap
 
-> **Current Status:** Android Application Foundation Initialized  
-> **Active Milestone:** `M0.2 — Core Android App Shell & Architecture Skeleton`  
-> **Last Updated:** Milestone M0.2 Initialized
+> **Current Status:** Backend Foundation Implemented (Runtime Validation Pending)
+> **Active Milestone:** `M0.3 — Backend Foundation`
+> **Last Updated:** M0.3 Code Implemented (Runtime Validation Pending)
 
 ---
 
@@ -12,8 +12,8 @@
 | :--- | :--- | :--- | :--- |
 | **M0.1** | Repository Foundation & Architectural Baseline | **COMPLETED** | Current |
 | **M0.2** | Core Android App Shell & Architecture Skeleton | **COMPLETED** | Current |
-| **M0.3** | Modular Monolith Backend Foundation & PostGIS Setup | PLANNED | Pending Approval |
-| **M0.4** | Edge Camera Capture & Offline Queue Engine | PLANNED | TBD |
+| **M0.3** | Modular Monolith Backend Foundation & PostGIS Setup | **IMPLEMENTED — RUNTIME VALIDATION PENDING** | Current |
+| **M0.4** | Edge Camera Capture & Offline Queue Engine | PLANNED | Pending Approval |
 | **M0.5** | Media Ingestion & Evidence Integrity Pipeline | PLANNED | TBD |
 | **M0.6** | AI Computer Vision Drainage Defect Model Pipeline | PLANNED | TBD |
 | **M0.7** | Asset Memory Timeline & Human Verification Workflow | PLANNED | TBD |
@@ -45,8 +45,13 @@
 - [ ] `:feature:sync` (Offline queue background manager)
 - [ ] `:feature:asset-memory` (Timeline view & asset details)
 
-### Backend Services (`/backend`)
-- [ ] Modular FastAPI Core (`app.core`)
+### Backend Services (`/backend` & `/infrastructure`)
+- [x] Modular FastAPI Core (`app.core`, `app.main`)
+- [x] Async SQLAlchemy 2.0 Engine & Session Factory (`app.infrastructure.db`)
+- [x] Alembic Async Migration Environment & PostGIS Init (`migrations/versions/0001_init_postgis.py`)
+- [x] Diagnostic Health Endpoints (`GET /api/v1/health/live`, `GET /api/v1/health/ready`)
+- [x] Container Orchestration Blueprint (`infrastructure/docker/docker-compose.yml`)
+- [x] Dependency Management (`backend/pyproject.toml` targeting Python 3.12)
 - [ ] Asset Management Module (`app.modules.assets`)
 - [ ] Observation Ingestion Module (`app.modules.observations`)
 - [ ] AI Inference Pipeline Gateway (`app.modules.ai_engine`)
@@ -62,6 +67,7 @@
 3. **Offline-First Android App:** SQLite/Room encrypted queue storing observations locally until network connectivity is confirmed, ensuring zero field data loss.
 4. **SHA-256 Media Hashing:** Cryptographic hashing performed client-side upon capture to guarantee evidence immutability and anti-tampering.
 5. **Gradle Version Catalog & Single-Module App Shell:** Established single `:app` module structure with Kotlin 2.0.0, Compose, Material 3, and Hilt DI.
+6. **Backend Foundation Architecture:** Implemented FastAPI modular monolith foundation with Pydantic Settings v2, async SQLAlchemy 2.0, Alembic PostGIS migrations, and health routes (`/health/live`, `/health/ready`).
 
 ---
 
@@ -69,10 +75,10 @@
 
 - **Risk 1 — Field GPS Accuracy:** GPS drift under urban canopy or near tall structures may mislocate drainage assets. *Mitigation:* Require manual map-pin verification and capture heading/bearing metadata.
 - **Risk 2 — Heavy Media Sync Overhead:** High-resolution videos/photos captured in low-connectivity areas may stall sync queues. *Mitigation:* Background chunked uploading, adaptive compression, and prioritization of metadata JSON before media binaries.
+- **Risk 3 — Docker Runtime Pending:** Host environment currently lacks Docker CLI; container integration tests are pending Docker runtime environment availability.
 
 ---
 
 ## 5. Next Task
 
-- **Task M0.3:** Modular Monolith Backend Foundation & PostGIS Setup (awaiting user approval).
-
+- **Task M0.3 Runtime Validation & Task M0.4 Edge Camera Capture:** Execute container runtime validation when Docker environment is active, then proceed to M0.4.
