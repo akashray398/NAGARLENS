@@ -1,8 +1,8 @@
 # NAGARLENS — Project Status & Roadmap
 
-> **Current Status:** Operational Foundation Established  
-> **Active Milestone:** `M0.1 — Repository Foundation`  
-> **Last Updated:** Foundation Phase Initialized
+> **Current Status:** Android Application Foundation Initialized  
+> **Active Milestone:** `M0.2 — Core Android App Shell & Architecture Skeleton`  
+> **Last Updated:** Milestone M0.2 Initialized
 
 ---
 
@@ -11,8 +11,8 @@
 | Milestone | Target Scope | Status | Target Date |
 | :--- | :--- | :--- | :--- |
 | **M0.1** | Repository Foundation & Architectural Baseline | **COMPLETED** | Current |
-| **M0.2** | Core Android App Shell & Architecture Skeleton | PLANNED | Pending Approval |
-| **M0.3** | Modular Monolith Backend Foundation & PostGIS Setup | PLANNED | TBD |
+| **M0.2** | Core Android App Shell & Architecture Skeleton | **COMPLETED** | Current |
+| **M0.3** | Modular Monolith Backend Foundation & PostGIS Setup | PLANNED | Pending Approval |
 | **M0.4** | Edge Camera Capture & Offline Queue Engine | PLANNED | TBD |
 | **M0.5** | Media Ingestion & Evidence Integrity Pipeline | PLANNED | TBD |
 | **M0.6** | AI Computer Vision Drainage Defect Model Pipeline | PLANNED | TBD |
@@ -35,11 +35,11 @@
 - [x] Release Strategy & Deployment Pipelines (`docs/releases/RELEASE_STRATEGY.md`)
 
 ### Android Application (`/android`)
-- [ ] `:app` Module setup
+- [x] `:app` Application Shell setup (Gradle DSL, Version Catalog, Hilt, Compose, Navigation)
 - [ ] `:core:network` (Retrofit + OkHttp)
 - [ ] `:core:database` (Room database & DAO)
 - [ ] `:core:model` (Domain models & DTOs)
-- [ ] `:core:designsystem` (Material 3 Theme & Components)
+- [x] `:core:designsystem` (Material 3 Theme, Field Colors & Typography)
 - [ ] `:core:location` (GPS & Spatial Context Provider)
 - [ ] `:feature:capture` (CameraX observation capture)
 - [ ] `:feature:sync` (Offline queue background manager)
@@ -61,6 +61,7 @@
 2. **PostgreSQL 16 + PostGIS 3.4:** Primary datastore for spatial drainage line networks, catch basins, and spatial queries (`ST_DWithin`, `ST_Contains`).
 3. **Offline-First Android App:** SQLite/Room encrypted queue storing observations locally until network connectivity is confirmed, ensuring zero field data loss.
 4. **SHA-256 Media Hashing:** Cryptographic hashing performed client-side upon capture to guarantee evidence immutability and anti-tampering.
+5. **Gradle Version Catalog & Single-Module App Shell:** Established single `:app` module structure with Kotlin 2.0.0, Compose, Material 3, and Hilt DI.
 
 ---
 
@@ -73,4 +74,5 @@
 
 ## 5. Next Task
 
-- **Task M0.2:** Core Android App Shell & Architecture Skeleton setup (awaiting user approval).
+- **Task M0.3:** Modular Monolith Backend Foundation & PostGIS Setup (awaiting user approval).
+
