@@ -52,7 +52,15 @@ import com.nagarlens.app.core.designsystem.theme.SignalAmber
 import com.nagarlens.app.core.model.Asset
 import com.nagarlens.app.core.model.AssetCategory
 import com.nagarlens.app.core.model.AssetVerificationStatus
+import com.nagarlens.app.core.model.ConditionSeverity
+import com.nagarlens.app.core.model.DefectCategory
+import com.nagarlens.app.core.model.InterventionType
+import com.nagarlens.app.core.model.ObservationType
 import com.nagarlens.app.core.model.VerificationDecision
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun MapScreen(
@@ -71,13 +79,17 @@ fun MapScreen(
         }
     }
 
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm UTC", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(NagarlensSpacing.medium)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            NagarlensSectionHeader(title = "Living Infrastructure Map")
+            NagarlensSectionHeader(title = "Living Infrastructure Map & Memory Graph")
 
             Text(
                 text = uiState.activeWard,
@@ -126,7 +138,7 @@ fun MapScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "MAP VIEWPORT: 12.971°N, 77.594°E",
+                            text = "MAP VIEWPORT: 12.971°N, 77.594°E • Map Canvas Active (Offline Tile Fallback)",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.LightGray
                         )
@@ -147,7 +159,7 @@ fun MapScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No assets registered in this catchment region.\nTap + to register a new drain structure.",
+                                text = "No assets registered in this catchment region.\nTap + REGISTER to create a new asset.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray,
                                 textAlign = TextAlign.Center
@@ -172,7 +184,6 @@ fun MapScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        // Asset Status Marker Pin
                                         val markerColor = when (asset.verificationStatus) {
                                             AssetVerificationStatus.VERIFIED -> SafetyGreen
                                             AssetVerificationStatus.REJECTED -> AlertRed
@@ -220,7 +231,7 @@ fun MapScreen(
                 }
             }
 
-            // Selected Asset Drawer Card
+            // Selected Asset Memory Timeline Drawer Card
             uiState.selectedAsset?.let { asset ->
                 Spacer(modifier = Modifier.height(NagarlensSpacing.small))
                 NagarlensCard {
@@ -231,7 +242,7 @@ fun MapScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Asset: ${asset.assetCode}",
+                                text = "Asset Memory Graph: ${asset.assetCode}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -239,29 +250,72 @@ fun MapScreen(
                                 Text("CLOSE")
                             }
                         }
-                        Text(text = "Category: ${asset.assetCategory.name}")
+                        Text(text = "Category: ${asset.assetCategory.name} • Status: ${asset.verificationStatus.name}")
                         Text(text = "UUID: ${asset.id}", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Coordinates: %.4f°N, %.4f°E".format(asset.latitude, asset.longitude))
-                        Text(text = "Status: ${asset.verificationStatus.name} • Lifecycle: ${asset.lifecycleStatus.name}")
 
-                        if (asset.verificationStatus != AssetVerificationStatus.VERIFIED) {
-                            Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)
+                        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                        Text(
+                            text = "Chronological Event Timeline:",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+
+                        uiState.selectedAssetTimeline?.let { timeline ->
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(140.dp)
+                                    .padding(vertical = NagarlensSpacing.extraSmall)
                             ) {
-                                NagarlensPrimaryButton(
-                                    onClick = { viewModel.submitVerification(asset.id, VerificationDecision.APPROVED) },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("VERIFY")
+                                items(timeline.events) { event ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "• ${event.title}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            event.description?.let { desc ->
+                                                Text(
+                                                    text = desc,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = dateFormat.format(Date(event.timestampUtc)),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
                                 }
-                                TextButton(
-                                    onClick = { viewModel.submitVerification(asset.id, VerificationDecision.REJECTED) },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("REJECT", color = AlertRed)
-                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)
+                        ) {
+                            NagarlensPrimaryButton(
+                                onClick = { viewModel.openObservationDialog() },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("+ OBSERVATION")
+                            }
+                            NagarlensPrimaryButton(
+                                onClick = { viewModel.openInterventionDialog() },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("+ INTERVENTION")
                             }
                         }
                     }
@@ -294,11 +348,31 @@ fun MapScreen(
         )
     }
 
+    // Record Observation Dialog
+    if (uiState.isObservationDialogOpen && uiState.selectedAsset != null) {
+        ObservationDialog(
+            onDismiss = { viewModel.closeObservationDialog() },
+            onSubmit = { type, cat, sev, desc ->
+                viewModel.recordObservation(type, cat, sev, desc)
+            }
+        )
+    }
+
+    // Record Intervention Dialog
+    if (uiState.isInterventionDialogOpen && uiState.selectedAsset != null) {
+        InterventionDialog(
+            onDismiss = { viewModel.closeInterventionDialog() },
+            onSubmit = { type, title, desc ->
+                viewModel.recordIntervention(type, title, desc)
+            }
+        )
+    }
+
     // UI Notice Dialog
     uiState.uiMessage?.let { msg ->
         AlertDialog(
             onDismissRequest = { viewModel.clearUiMessage() },
-            title = { Text("Asset Registry Notice") },
+            title = { Text("Asset Memory Graph Notice") },
             text = { Text(msg) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearUiMessage() }) {
@@ -379,6 +453,100 @@ private fun AssetRegistrationDialog(
                 }
             ) {
                 Text("SUBMIT REGISTRATION")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCEL")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ObservationDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (ObservationType, DefectCategory, ConditionSeverity, String?) -> Unit
+) {
+    var selectedType by remember { mutableStateOf(ObservationType.ROUTINE_INSPECTION) }
+    var selectedCategory by remember { mutableStateOf(DefectCategory.SOLID_WASTE) }
+    var selectedSeverity by remember { mutableStateOf(ConditionSeverity.MODERATE) }
+    var descriptionText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Record Field Observation", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
+                Text(text = "Observation Type: ${selectedType.name}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Defect Category: ${selectedCategory.name}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Condition Severity: ${selectedSeverity.name}", style = MaterialTheme.typography.bodySmall)
+
+                OutlinedTextField(
+                    value = descriptionText,
+                    onValueChange = { descriptionText = it },
+                    label = { Text("Observation Description") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            NagarlensPrimaryButton(
+                onClick = {
+                    onSubmit(selectedType, selectedCategory, selectedSeverity, descriptionText.ifBlank { null })
+                }
+            ) {
+                Text("RECORD OBSERVATION")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCEL")
+            }
+        }
+    )
+}
+
+@Composable
+private fun InterventionDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (InterventionType, String, String?) -> Unit
+) {
+    var selectedType by remember { mutableStateOf(InterventionType.SILT_REMOVAL) }
+    var titleText by remember { mutableStateOf("Desilting Invert Channel") }
+    var descriptionText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Record Physical Intervention", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
+                Text(text = "Intervention Type: ${selectedType.name}", style = MaterialTheme.typography.bodySmall)
+
+                OutlinedTextField(
+                    value = titleText,
+                    onValueChange = { titleText = it },
+                    label = { Text("Intervention Title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = descriptionText,
+                    onValueChange = { descriptionText = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            NagarlensPrimaryButton(
+                onClick = {
+                    if (titleText.isNotBlank()) {
+                        onSubmit(selectedType, titleText, descriptionText.ifBlank { null })
+                    }
+                }
+            ) {
+                Text("RECORD INTERVENTION")
             }
         },
         dismissButton = {

@@ -6,9 +6,15 @@ import com.nagarlens.app.core.location.LocationData
 import com.nagarlens.app.core.location.LocationProvider
 import com.nagarlens.app.core.model.Asset
 import com.nagarlens.app.core.model.AssetCategory
+import com.nagarlens.app.core.model.AssetTimeline
 import com.nagarlens.app.core.model.AssetVerificationStatus
+import com.nagarlens.app.core.model.ConditionSeverity
+import com.nagarlens.app.core.model.DefectCategory
+import com.nagarlens.app.core.model.InterventionType
+import com.nagarlens.app.core.model.ObservationType
 import com.nagarlens.app.core.model.VerificationDecision
 import com.nagarlens.app.core.repository.AssetRepository
+import com.nagarlens.app.core.repository.TemporalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +30,10 @@ data class MapUiState(
     val activeWard: String = "Ward 12 — Bangalore Central",
     val assets: List<Asset> = emptyList(),
     val selectedAsset: Asset? = null,
+    val selectedAssetTimeline: AssetTimeline? = null,
     val isRegistrationDialogOpen: Boolean = false,
+    val isObservationDialogOpen: Boolean = false,
+    val isInterventionDialogOpen: Boolean = false,
     val userLocation: LocationData? = null,
     val uiMessage: String? = null
 )
@@ -32,6 +41,7 @@ data class MapUiState(
 @HiltViewModel
 class MapViewModel @Inject constructor(
     private val assetRepository: AssetRepository,
+    private val temporalRepository: TemporalRepository,
     private val locationProvider: LocationProvider
 ) : ViewModel() {
 
@@ -51,7 +61,14 @@ class MapViewModel @Inject constructor(
     }
 
     fun selectAsset(asset: Asset?) {
-        _uiState.update { it.copy(selectedAsset = asset) }
+        _uiState.update { it.copy(selectedAsset = asset, selectedAssetTimeline = null) }
+        if (asset != null) {
+            viewModelScope.launch {
+                temporalRepository.getAssetTimeline(asset.id, asset.assetCode).collectLatest { timeline ->
+                    _uiState.update { it.copy(selectedAssetTimeline = timeline) }
+                }
+            }
+        }
     }
 
     fun openRegistrationDialog() {
@@ -61,6 +78,22 @@ class MapViewModel @Inject constructor(
 
     fun closeRegistrationDialog() {
         _uiState.update { it.copy(isRegistrationDialogOpen = false) }
+    }
+
+    fun openObservationDialog() {
+        _uiState.update { it.copy(isObservationDialogOpen = true) }
+    }
+
+    fun closeObservationDialog() {
+        _uiState.update { it.copy(isObservationDialogOpen = false) }
+    }
+
+    fun openInterventionDialog() {
+        _uiState.update { it.copy(isInterventionDialogOpen = true) }
+    }
+
+    fun closeInterventionDialog() {
+        _uiState.update { it.copy(isInterventionDialogOpen = false) }
     }
 
     fun refreshUserLocation() {
@@ -91,9 +124,70 @@ class MapViewModel @Inject constructor(
                             uiMessage = "Asset ${newAsset.assetCode} registered successfully."
                         )
                     }
+                    selectAsset(newAsset)
                 },
                 onFailure = { error ->
                     _uiState.update { it.copy(uiMessage = "Registration failed: ${error.message}") }
+                }
+            )
+        }
+    }
+
+    fun recordObservation(
+        type: ObservationType,
+        category: DefectCategory,
+        severity: ConditionSeverity,
+        description: String?
+    ) {
+        val currentAsset = _uiState.value.selectedAsset ?: return
+        viewModelScope.launch {
+            temporalRepository.recordObservation(
+                assetId = currentAsset.id,
+                type = type,
+                category = category,
+                severity = severity,
+                description = description,
+                latitude = currentAsset.latitude,
+                longitude = currentAsset.longitude
+            ).fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            isObservationDialogOpen = false,
+                            uiMessage = "Observation recorded for ${currentAsset.assetCode}."
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(uiMessage = "Observation failed: ${error.message}") }
+                }
+            )
+        }
+    }
+
+    fun recordIntervention(
+        type: InterventionType,
+        title: String,
+        description: String?
+    ) {
+        val currentAsset = _uiState.value.selectedAsset ?: return
+        viewModelScope.launch {
+            temporalRepository.recordIntervention(
+                assetId = currentAsset.id,
+                type = type,
+                title = title,
+                description = description
+            ).fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            isInterventionDialogOpen = false,
+                            uiMessage = "Intervention '$title' recorded."
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(uiMessage = "Intervention failed: ${error.message}") }
                 }
             )
         }

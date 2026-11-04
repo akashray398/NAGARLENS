@@ -5,11 +5,21 @@ import com.nagarlens.app.core.location.LocationData
 import com.nagarlens.app.core.location.LocationProvider
 import com.nagarlens.app.core.model.Asset
 import com.nagarlens.app.core.model.AssetCategory
+import com.nagarlens.app.core.model.AssetTimeline
+import com.nagarlens.app.core.model.ConditionSeverity
+import com.nagarlens.app.core.model.DefectCategory
 import com.nagarlens.app.core.model.Evidence
+import com.nagarlens.app.core.model.InfrastructureObservation
+import com.nagarlens.app.core.model.Intervention
+import com.nagarlens.app.core.model.InterventionType
+import com.nagarlens.app.core.model.ObservationType
+import com.nagarlens.app.core.model.OutcomeVerification
 import com.nagarlens.app.core.model.SyncStatus
 import com.nagarlens.app.core.model.VerificationDecision
+import com.nagarlens.app.core.model.VerificationOutcome
 import com.nagarlens.app.core.repository.AssetRepository
 import com.nagarlens.app.core.repository.EvidenceRepository
+import com.nagarlens.app.core.repository.TemporalRepository
 import com.nagarlens.app.feature.activity.ActivityViewModel
 import com.nagarlens.app.feature.capture.CameraMode
 import com.nagarlens.app.feature.capture.CaptureViewModel
@@ -47,9 +57,10 @@ class FeatureViewModelsTest {
     @Test
     fun `mapViewModel initializes state with active catchment bounds`() {
         val fakeAssetRepository = FakeAssetRepository()
+        val fakeTemporalRepository = FakeTemporalRepository()
         val fakeLocationProvider = FakeLocationProvider()
 
-        val viewModel = MapViewModel(fakeAssetRepository, fakeLocationProvider)
+        val viewModel = MapViewModel(fakeAssetRepository, fakeTemporalRepository, fakeLocationProvider)
         val state = viewModel.uiState.value
         assertNotNull(state.activeWard)
         assertEquals(5, state.activeFilters.size)
@@ -96,6 +107,16 @@ class FeatureViewModelsTest {
         override fun getAssetsInViewport(minLat: Double, minLon: Double, maxLat: Double, maxLon: Double): Flow<List<Asset>> = flowOf(emptyList())
         override suspend fun registerAsset(category: AssetCategory, latitude: Double, longitude: Double, altitudeMeters: Float?, description: String?, evidenceId: String?): Result<Asset> = Result.failure(Exception())
         override suspend fun submitVerification(assetId: String, decision: VerificationDecision, reviewerId: String, reason: String?): Result<Asset> = Result.failure(Exception())
+    }
+
+    private class FakeTemporalRepository : TemporalRepository {
+        override fun getObservationsForAsset(assetId: String): Flow<List<InfrastructureObservation>> = flowOf(emptyList())
+        override fun getInterventionsForAsset(assetId: String): Flow<List<Intervention>> = flowOf(emptyList())
+        override fun getOutcomeVerificationsForAsset(assetId: String): Flow<List<OutcomeVerification>> = flowOf(emptyList())
+        override fun getAssetTimeline(assetId: String, assetCode: String): Flow<AssetTimeline> = flowOf(AssetTimeline(assetId, assetCode, 0, emptyList()))
+        override suspend fun recordObservation(assetId: String, type: ObservationType, category: DefectCategory, severity: ConditionSeverity, description: String?, latitude: Double, longitude: Double, evidenceId: String?): Result<InfrastructureObservation> = Result.failure(Exception())
+        override suspend fun recordIntervention(assetId: String, type: InterventionType, title: String, description: String?): Result<Intervention> = Result.failure(Exception())
+        override suspend fun submitOutcomeVerification(interventionId: String, assetId: String, verificationObservationId: String, outcome: VerificationOutcome, description: String?): Result<OutcomeVerification> = Result.failure(Exception())
     }
 
     private class FakeEvidenceRepository : EvidenceRepository {
