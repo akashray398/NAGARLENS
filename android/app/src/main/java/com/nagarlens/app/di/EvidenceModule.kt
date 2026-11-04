@@ -1,7 +1,7 @@
 package com.nagarlens.app.di
 
-import com.nagarlens.app.core.integrity.EvidenceFileStore
-import com.nagarlens.app.core.integrity.Sha256Hasher
+import com.nagarlens.app.core.network.DeferredEvidenceUploadClient
+import com.nagarlens.app.core.network.EvidenceUploadClient
 import com.nagarlens.app.core.repository.EvidenceRepository
 import com.nagarlens.app.core.repository.EvidenceRepositoryImpl
 import dagger.Binds
@@ -19,4 +19,10 @@ abstract class EvidenceModule {
     abstract fun bindEvidenceRepository(
         impl: EvidenceRepositoryImpl
     ): EvidenceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEvidenceUploadClient(
+        impl: DeferredEvidenceUploadClient
+    ): EvidenceUploadClient
 }

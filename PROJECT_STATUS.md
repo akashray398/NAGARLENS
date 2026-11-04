@@ -1,8 +1,8 @@
 # NAGARLENS — Project Status & Roadmap
 
-> **Current Status:** Reality Capture & Evidence Integrity Pipeline Implemented
-> **Active Milestone:** `M0.5 — Reality Capture & Evidence Integrity Pipeline`
-> **Last Updated:** Milestone M0.5 Complete
+> **Current Status:** Offline Evidence Persistence, Synchronization & Reliability Hardening Complete
+> **Active Milestone:** `M0.6 — Offline Evidence Persistence & Synchronization Foundation`
+> **Last Updated:** Milestone M0.6 Complete & Hardened
 
 ---
 
@@ -15,8 +15,8 @@
 | **M0.3** | Modular Monolith Backend Foundation & PostGIS Setup | **IMPLEMENTED — RUNTIME VALIDATION PENDING** | Current |
 | **M0.4** | Design System & Navigation Implementation | **COMPLETED** | Current |
 | **M0.5** | Reality Capture & Evidence Integrity Pipeline | **COMPLETED** | Current |
-| **M0.6** | AI Computer Vision Drainage Defect Model Pipeline | PLANNED | Pending Approval |
-| **M0.7** | Asset Memory Timeline & Human Verification Workflow | PLANNED | TBD |
+| **M0.6** | Offline Evidence Persistence & Synchronization Foundation | **COMPLETED** | Current |
+| **M0.7** | AI Computer Vision Drainage Defect Model Pipeline | PLANNED | Pending Approval |
 
 ---
 
@@ -37,12 +37,12 @@
 ### Android Application (`/android`)
 - [x] `:app` Application Shell setup (Gradle DSL, Version Catalog, Hilt, Compose, Navigation)
 - [ ] `:core:network` (Retrofit + OkHttp)
-- [ ] `:core:database` (Room database & DAO)
-- [x] `:core:model` (`Evidence`, `MediaType`, `EvidenceStatus` domain entities)
+- [x] `:core:database` (Room database `NagarlensDatabase`, `EvidenceDao`, Room schema export enabled)
+- [x] `:core:model` (`Evidence`, `MediaType`, `EvidenceStatus`, `SyncStatus` domain entities)
 - [x] `:core:designsystem` (Material 3 Theme, Field Colors, Typography, Shapes & Components)
 - [x] `:core:location` (Fused Location Provider & GNSS telemetry)
 - [x] `:feature:capture` (CameraX photo/video acquisition, app-private evidence store, SHA-256 integrity pipeline)
-- [ ] `:feature:sync` (Offline queue background manager)
+- [x] `:feature:sync` (Offline queue, WorkManager background manager, stale UPLOADING recovery)
 - [x] `:feature:asset-memory` (Map screen, Activity history, and Profile foundations)
 
 ### Backend Services (`/backend` & `/infrastructure`)
@@ -70,6 +70,7 @@
 6. **Backend Foundation Architecture:** Implemented FastAPI modular monolith foundation with Pydantic Settings v2, async SQLAlchemy 2.0, Alembic PostGIS migrations, and health routes (`/health/live`, `/health/ready`).
 7. **Design System & Navigation Shell (M0.4):** Implemented Material 3 field design tokens, custom buttons/cards/badges/app bars, and 5-destination bottom navigation architecture (Home, Map, Capture, Activity, Profile) with prominent central Capture FAB action button.
 8. **Reality Capture & Evidence Preservation (M0.5):** Implemented CameraX lifecycle-aware controller for photo & video recordings, app-private evidence storage (`context.filesDir/evidence/`), SHA-256 content digest computation on original completed binaries, and Fused Location Provider GNSS lock telemetry with explicit runtime permission handling.
+9. **Offline Evidence Persistence & WorkManager Synchronization (M0.6):** Implemented Room database (`NagarlensDatabase` with schema export enabled, `EvidenceDao`, `EvidenceEntity`), explicit state machine (`LOCAL_ONLY`, `QUEUED`, `UPLOADING`, `SYNCED`, `RETRYABLE_FAILURE`, `PERMANENT_FAILURE`), cancellation-safe WorkManager background sync scheduler (`EvidenceSyncScheduler`, `EvidenceSyncWorker`), stale `UPLOADING` recovery engine (`recoverStaleUploadingRecords`), orphan file auto-recovery audit engine, and `DeferredEvidenceUploadClient`.
 
 ---
 
@@ -83,4 +84,4 @@
 
 ## 5. Next Task
 
-- **Task M0.6:** AI Computer Vision Drainage Defect Model Pipeline (awaiting user approval).
+- **Task M0.7:** AI Computer Vision Drainage Defect Model Pipeline (awaiting user approval).

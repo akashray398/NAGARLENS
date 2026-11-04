@@ -1,37 +1,62 @@
 package com.nagarlens.app.feature.activity
 
 import androidx.lifecycle.ViewModel
-import com.nagarlens.app.core.designsystem.component.AssetConditionStatus
+import androidx.lifecycle.viewModelScope
+import com.nagarlens.app.core.model.Evidence
+import com.nagarlens.app.core.repository.EvidenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class ObservationActivityItem(
-    val id: String,
-    val assetCode: String,
-    val timestamp: String,
-    val status: AssetConditionStatus,
-    val locationText: String
-)
-
 data class ActivityUiState(
-    val activeFilter: String = "All Activity",
-    val filterOptions: List<String> = listOf("All Activity", "Observations", "Interventions", "Verified"),
-    val recentActivities: List<ObservationActivityItem> = listOf(
-        ObservationActivityItem("OBS-104", "DRAIN-CB-104", "10 minutes ago", AssetConditionStatus.CRITICAL_BLOCKAGE, "Ward 12 (12.9716°N, 77.5946°E)"),
-        ObservationActivityItem("OBS-103", "DRAIN-MH-082", "2 hours ago", AssetConditionStatus.PARTIAL_SILTATION, "Ward 12 (12.9702°N, 77.5921°E)"),
-        ObservationActivityItem("OBS-102", "DRAIN-CB-091", "Yesterday", AssetConditionStatus.NORMAL_FLOW, "Ward 12 (12.9688°N, 77.5910°E)")
-    )
+    val activeFilter: String = "All Records",
+    val filterOptions: List<String> = listOf("All Records", "Queued / Local", "Synced", "Failures"),
+    val evidenceList: List<Evidence> = emptyList(),
+    val actionMessage: String? = null
 )
 
 @HiltViewModel
-class ActivityViewModel @Inject constructor() : ViewModel() {
+class ActivityViewModel @Inject constructor(
+    private val evidenceRepository: EvidenceRepository
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(ActivityUiState())
     val uiState: StateFlow<ActivityUiState> = _uiState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            evidenceRepository.auditAndRecoverOrphanFiles()
+        }
+        viewModelScope.launch {
+            evidenceRepository.getAllEvidence().collectLatest { records ->
+                _uiState.update { it.copy(evidenceList = records) }
+            }
+        }
+    }
+
     fun selectFilter(filter: String) {
-        _uiState.value = _uiState.value.copy(activeFilter = filter)
+        _uiState.update { it.copy(activeFilter = filter) }
+    }
+
+    fun retrySync(evidenceId: String) {
+        viewModelScope.launch {
+            evidenceRepository.retrySync(evidenceId).fold(
+                onSuccess = {
+                    _uiState.update { it.copy(actionMessage = "Enqueued retry for evidence record.") }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(actionMessage = "Retry failed: ${error.message}") }
+                }
+            )
+        }
+    }
+
+    fun clearActionMessage() {
+        _uiState.update { it.copy(actionMessage = null) }
     }
 }

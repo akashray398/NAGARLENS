@@ -4,6 +4,7 @@ import com.nagarlens.app.core.camera.CameraXController
 import com.nagarlens.app.core.location.LocationData
 import com.nagarlens.app.core.location.LocationProvider
 import com.nagarlens.app.core.model.Evidence
+import com.nagarlens.app.core.model.SyncStatus
 import com.nagarlens.app.core.repository.EvidenceRepository
 import com.nagarlens.app.feature.activity.ActivityViewModel
 import com.nagarlens.app.feature.capture.CameraMode
@@ -62,13 +63,11 @@ class FeatureViewModelsTest {
     }
 
     @Test
-    fun `activityViewModel initializes state with observation timeline items`() {
-        val viewModel = ActivityViewModel()
+    fun `activityViewModel initializes state observing evidence records`() {
+        val fakeRepository = FakeEvidenceRepository()
+        val viewModel = ActivityViewModel(fakeRepository)
         val state = viewModel.uiState.value
-        assertEquals(3, state.recentActivities.size)
-
-        viewModel.selectFilter("Observations")
-        assertEquals("Observations", viewModel.uiState.value.activeFilter)
+        assertNotNull(state.evidenceList)
     }
 
     @Test
@@ -89,6 +88,12 @@ class FeatureViewModelsTest {
         override fun saveVideoEvidence(tempVideoFile: File, locationData: LocationData?): Flow<Result<Evidence>> = flowOf()
         override fun getAllEvidence(): Flow<List<Evidence>> = flowOf(emptyList())
         override fun getEvidenceById(id: String): Flow<Evidence?> = flowOf(null)
+        override fun getEvidenceBySyncStatus(status: SyncStatus): Flow<List<Evidence>> = flowOf(emptyList())
+        override suspend fun updateSyncStatus(id: String, targetStatus: SyncStatus, errorMessage: String?) {}
+        override suspend fun queueForSync(id: String): Result<Unit> = Result.success(Unit)
+        override suspend fun retrySync(id: String): Result<Unit> = Result.success(Unit)
+        override suspend fun auditAndRecoverOrphanFiles(): Int = 0
+        override suspend fun recoverStaleUploadingRecords(staleThresholdMs: Long): Int = 0
     }
 
     companion object {

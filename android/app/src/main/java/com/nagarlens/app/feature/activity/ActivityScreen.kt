@@ -1,6 +1,8 @@
 package com.nagarlens.app.feature.activity
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,10 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,11 +26,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
+import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
-import com.nagarlens.app.core.designsystem.component.NagarlensStatusBadge
+import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
+import com.nagarlens.app.core.designsystem.theme.SafetyGreen
+import com.nagarlens.app.core.designsystem.theme.SignalAmber
+import com.nagarlens.app.core.model.SyncStatus
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun ActivityScreen(
@@ -34,14 +47,27 @@ fun ActivityScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val filteredRecords = uiState.evidenceList.filter { evidence ->
+        when (uiState.activeFilter) {
+            "Queued / Local" -> evidence.syncStatus == SyncStatus.LOCAL_ONLY || evidence.syncStatus == SyncStatus.QUEUED || evidence.syncStatus == SyncStatus.UPLOADING
+            "Synced" -> evidence.syncStatus == SyncStatus.SYNCED
+            "Failures" -> evidence.syncStatus == SyncStatus.RETRYABLE_FAILURE || evidence.syncStatus == SyncStatus.PERMANENT_FAILURE
+            else -> true
+        }
+    }
+
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss 'UTC'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(NagarlensSpacing.medium)
     ) {
-        NagarlensSectionHeader(title = "Observation Activity History")
+        NagarlensSectionHeader(title = "Offline Evidence & Sync Status")
 
-        // Activity Timeline Filter Chips
+        // Filter Chips
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
             modifier = Modifier.fillMaxWidth()
@@ -61,41 +87,138 @@ fun ActivityScreen(
 
         Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
 
-        // Activity Timeline Items
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(uiState.recentActivities) { item ->
-                NagarlensCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = item.assetCode,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+        if (filteredRecords.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No evidence records found.\nCapture evidence using the Camera.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(filteredRecords) { evidence ->
+                    NagarlensCard {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = evidence.originalFileName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                SyncStatusBadge(status = evidence.syncStatus)
+                            }
+
                             Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
                             Text(
-                                text = item.locationText,
+                                text = "ID: ${evidence.id} • %.2f KB".format(evidence.fileSizeBytes / 1024.0),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
+                            Text(
+                                text = "Captured: ${dateFormat.format(Date(evidence.captureTimestampUtc))}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+
+                            val locStr = if (evidence.latitude != null && evidence.longitude != null) {
+                                "GNSS: %.4f°N, %.4f°E (±%.1fm)".format(evidence.latitude, evidence.longitude, evidence.locationAccuracyMeters ?: 0f)
+                            } else {
+                                "GNSS: Disabled / Unavailable"
+                            }
+                            Text(
+                                text = locStr,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+
+                            Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                            Text(
+                                text = "SHA-256 Digest:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            Text(
+                                text = evidence.sha256Hash,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            evidence.lastSyncError?.let { error ->
+                                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
+                                Text(
+                                    text = "Status Detail: $error",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AlertRed,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            if (evidence.syncStatus == SyncStatus.RETRYABLE_FAILURE || evidence.syncStatus == SyncStatus.LOCAL_ONLY) {
+                                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                                NagarlensPrimaryButton(
+                                    onClick = { viewModel.retrySync(evidence.id) }
+                                ) {
+                                    Text("RETRY SYNC")
+                                }
+                            }
                         }
-                        NagarlensStatusBadge(status = item.status)
                     }
-                    Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-                    Text(
-                        text = "Captured: ${item.timestamp} • SHA-256 Verified",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
                 }
             }
         }
+    }
+
+    uiState.actionMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearActionMessage() },
+            title = { Text("Synchronization Status") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearActionMessage() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun SyncStatusBadge(status: SyncStatus) {
+    val (color, text) = when (status) {
+        SyncStatus.LOCAL_ONLY -> MaterialTheme.colorScheme.secondary to "LOCAL ONLY"
+        SyncStatus.QUEUED -> SignalAmber to "QUEUED"
+        SyncStatus.UPLOADING -> SignalAmber to "UPLOADING"
+        SyncStatus.SYNCED -> SafetyGreen to "SYNCED"
+        SyncStatus.RETRYABLE_FAILURE -> SignalAmber to "RETRYABLE FAIL"
+        SyncStatus.PERMANENT_FAILURE -> AlertRed to "PERMANENT FAIL"
+    }
+
+    Box(
+        modifier = Modifier
+            .background(
+                color = color,
+                shape = MaterialTheme.shapes.extraSmall
+            )
+            .padding(horizontal = NagarlensSpacing.small, vertical = 4.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
