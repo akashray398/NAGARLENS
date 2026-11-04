@@ -1,0 +1,15 @@
+package com.nagarlens.app.core.model
+
+const val TAXONOMY_VERSION = "v1.0.0"
+
+enum class DefectCategory {
+    DRAIN_BLOCKAGE,
+    SOLID_WASTE,
+    SILT_SEDIMENT,
+    WATERLOGGING,
+    STRUCTURAL_DAMAGE,
+    COVER_DAMAGE_MISSING,
+    DRAIN_OVERFLOW,
+    VEGETATION_INTRUSION,
+    UNKNOWN_INSUFFICIENT
+}

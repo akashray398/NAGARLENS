@@ -28,7 +28,7 @@ def create_application() -> FastAPI:
     )
 
     configure_cors(app)
-    app.include_router(api_v1_router)
+    app.include_router(api_v1_router, prefix="/api/v1")
 
     # Root health convenience redirect / endpoint
     @app.get("/health", include_in_schema=False)
