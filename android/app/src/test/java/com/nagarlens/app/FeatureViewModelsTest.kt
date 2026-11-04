@@ -3,8 +3,12 @@ package com.nagarlens.app
 import com.nagarlens.app.core.camera.CameraXController
 import com.nagarlens.app.core.location.LocationData
 import com.nagarlens.app.core.location.LocationProvider
+import com.nagarlens.app.core.model.Asset
+import com.nagarlens.app.core.model.AssetCategory
 import com.nagarlens.app.core.model.Evidence
 import com.nagarlens.app.core.model.SyncStatus
+import com.nagarlens.app.core.model.VerificationDecision
+import com.nagarlens.app.core.repository.AssetRepository
 import com.nagarlens.app.core.repository.EvidenceRepository
 import com.nagarlens.app.feature.activity.ActivityViewModel
 import com.nagarlens.app.feature.capture.CameraMode
@@ -42,10 +46,13 @@ class FeatureViewModelsTest {
 
     @Test
     fun `mapViewModel initializes state with active catchment bounds`() {
-        val viewModel = MapViewModel()
+        val fakeAssetRepository = FakeAssetRepository()
+        val fakeLocationProvider = FakeLocationProvider()
+
+        val viewModel = MapViewModel(fakeAssetRepository, fakeLocationProvider)
         val state = viewModel.uiState.value
         assertNotNull(state.activeWard)
-        assertEquals(4, state.activeFilters.size)
+        assertEquals(5, state.activeFilters.size)
 
         viewModel.selectFilter("Catch Basins")
         assertEquals("Catch Basins", viewModel.uiState.value.selectedFilter)
@@ -81,6 +88,14 @@ class FeatureViewModelsTest {
     private class FakeCameraXController : CameraXController(dummyContext())
     private class FakeLocationProvider : LocationProvider(dummyContext()) {
         override suspend fun getCurrentLocation(): LocationData? = null
+    }
+
+    private class FakeAssetRepository : AssetRepository {
+        override fun getAllAssets(): Flow<List<Asset>> = flowOf(emptyList())
+        override fun getAssetById(id: String): Flow<Asset?> = flowOf(null)
+        override fun getAssetsInViewport(minLat: Double, minLon: Double, maxLat: Double, maxLon: Double): Flow<List<Asset>> = flowOf(emptyList())
+        override suspend fun registerAsset(category: AssetCategory, latitude: Double, longitude: Double, altitudeMeters: Float?, description: String?, evidenceId: String?): Result<Asset> = Result.failure(Exception())
+        override suspend fun submitVerification(assetId: String, decision: VerificationDecision, reviewerId: String, reason: String?): Result<Asset> = Result.failure(Exception())
     }
 
     private class FakeEvidenceRepository : EvidenceRepository {

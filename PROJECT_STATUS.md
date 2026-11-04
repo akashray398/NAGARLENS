@@ -1,8 +1,8 @@
 # NAGARLENS — Project Status & Roadmap
 
-> **Current Status:** Offline Evidence Persistence, Synchronization & Reliability Hardening Complete
-> **Active Milestone:** `M0.6 — Offline Evidence Persistence & Synchronization Foundation`
-> **Last Updated:** Milestone M0.6 Complete & Hardened
+> **Current Status:** Infrastructure Asset Identity & Living Map Foundation Implemented
+> **Active Milestone:** `M0.8 — Infrastructure Asset Identity & Living Map Foundation`
+> **Last Updated:** Milestone M0.8 Complete
 
 ---
 
@@ -16,7 +16,9 @@
 | **M0.4** | Design System & Navigation Implementation | **COMPLETED** | Current |
 | **M0.5** | Reality Capture & Evidence Integrity Pipeline | **COMPLETED** | Current |
 | **M0.6** | Offline Evidence Persistence & Synchronization Foundation | **COMPLETED** | Current |
-| **M0.7** | AI Computer Vision Drainage Defect Model Pipeline | PLANNED | Pending Approval |
+| **M0.7** | Custom AI Computer Vision Drainage Defect Model Pipeline | **COMPLETED** | Current |
+| **M0.8** | Infrastructure Asset Identity & Living Map Foundation | **COMPLETED** | Current |
+| **M0.9** | Asset Memory Timeline & Human Verification Workflow | PLANNED | Pending Approval |
 
 ---
 
@@ -33,29 +35,30 @@
 - [x] API Standards & Ingestion Protocols (`docs/api/API_STANDARDS.md`)
 - [x] Testing Strategy & Verification Guidelines (`docs/testing/TEST_STRATEGY.md`)
 - [x] Release Strategy & Deployment Pipelines (`docs/releases/RELEASE_STRATEGY.md`)
+- [x] Asset Identity & Living Map Architecture (`docs/architecture/ASSET_IDENTITY_ARCHITECTURE.md`, `LIVING_MAP_ARCHITECTURE.md`, `ADR-002`)
 
 ### Android Application (`/android`)
 - [x] `:app` Application Shell setup (Gradle DSL, Version Catalog, Hilt, Compose, Navigation)
 - [ ] `:core:network` (Retrofit + OkHttp)
-- [x] `:core:database` (Room database `NagarlensDatabase`, `EvidenceDao`, Room schema export enabled)
-- [x] `:core:model` (`Evidence`, `MediaType`, `EvidenceStatus`, `SyncStatus` domain entities)
+- [x] `:core:database` (Room database `NagarlensDatabase` v2, `EvidenceDao`, `AssetDao`, Room schema export enabled)
+- [x] `:core:model` (`Evidence`, `Asset`, `AiAssessment`, `DefectCategory`, `SyncStatus` domain entities)
 - [x] `:core:designsystem` (Material 3 Theme, Field Colors, Typography, Shapes & Components)
 - [x] `:core:location` (Fused Location Provider & GNSS telemetry)
 - [x] `:feature:capture` (CameraX photo/video acquisition, app-private evidence store, SHA-256 integrity pipeline)
 - [x] `:feature:sync` (Offline queue, WorkManager background manager, stale UPLOADING recovery)
-- [x] `:feature:asset-memory` (Map screen, Activity history, and Profile foundations)
+- [x] `:feature:asset-memory` (Living Map, Asset Registration, Activity history, and Profile)
 
 ### Backend Services (`/backend` & `/infrastructure`)
 - [x] Modular FastAPI Core (`app.core`, `app.main`)
 - [x] Async SQLAlchemy 2.0 Engine & Session Factory (`app.infrastructure.db`)
-- [x] Alembic Async Migration Environment & PostGIS Init (`migrations/versions/0001_init_postgis.py`)
+- [x] Alembic Async Migration Environment & PostGIS Init (`migrations/versions/0001_init_postgis.py`, `0002_add_asset_tables.py`)
 - [x] Diagnostic Health Endpoints (`GET /api/v1/health/live`, `GET /api/v1/health/ready`)
 - [x] Container Orchestration Blueprint (`infrastructure/docker/docker-compose.yml`)
 - [x] Dependency Management (`backend/pyproject.toml` targeting Python 3.12)
-- [ ] Asset Management Module (`app.modules.assets`)
+- [x] Asset Management Module (`app.modules.assets`)
 - [ ] Observation Ingestion Module (`app.modules.observations`)
-- [ ] AI Inference Pipeline Gateway (`app.modules.ai_engine`)
-- [ ] PostGIS Spatial Analytics Engine (`app.modules.spatial`)
+- [x] AI Inference Pipeline Gateway (`app.modules.ai_engine` / `app.ml`)
+- [x] PostGIS Spatial Analytics Engine (`app.modules.assets.services`)
 - [ ] Object Storage S3 Media Manager (`app.core.storage`)
 
 ---
@@ -71,6 +74,8 @@
 7. **Design System & Navigation Shell (M0.4):** Implemented Material 3 field design tokens, custom buttons/cards/badges/app bars, and 5-destination bottom navigation architecture (Home, Map, Capture, Activity, Profile) with prominent central Capture FAB action button.
 8. **Reality Capture & Evidence Preservation (M0.5):** Implemented CameraX lifecycle-aware controller for photo & video recordings, app-private evidence storage (`context.filesDir/evidence/`), SHA-256 content digest computation on original completed binaries, and Fused Location Provider GNSS lock telemetry with explicit runtime permission handling.
 9. **Offline Evidence Persistence & WorkManager Synchronization (M0.6):** Implemented Room database (`NagarlensDatabase` with schema export enabled, `EvidenceDao`, `EvidenceEntity`), explicit state machine (`LOCAL_ONLY`, `QUEUED`, `UPLOADING`, `SYNCED`, `RETRYABLE_FAILURE`, `PERMANENT_FAILURE`), cancellation-safe WorkManager background sync scheduler (`EvidenceSyncScheduler`, `EvidenceSyncWorker`), stale `UPLOADING` recovery engine (`recoverStaleUploadingRecords`), orphan file auto-recovery audit engine, and `DeferredEvidenceUploadClient`.
+10. **Custom AI Computer Vision Foundation (M0.7):** Implemented versioned 9-category drainage defect taxonomy (v1.0.0), incident-grouped split generator ensuring 0 leakage across train/val/test splits, ImagePreprocessor with PIL decoding, dHash duplicate detection, and MobileNetV3-Small & RT-DETR model architecture selection (avoiding AGPL-3.0 copyleft licenses).
+11. **Hybrid Asset Identity & Living Map Foundation (M0.8):** Implemented PostGIS point geometry assets, operational codes (e.g. `NAG-CB-000104`), Room database migration 1->2 (`AssetEntity`, `AssetDao`, `AssetRepository`), location history tracking, physical QR/NFC tag registry, evidence-to-asset linking, viewport/nearby spatial queries, and Compose Living Map UI with field registration dialogs.
 
 ---
 
@@ -84,4 +89,4 @@
 
 ## 5. Next Task
 
-- **Task M0.7:** AI Computer Vision Drainage Defect Model Pipeline (awaiting user approval).
+- **Task M0.9:** AI Computer Vision Drainage Defect Model Pipeline & Human Verification (awaiting user approval).

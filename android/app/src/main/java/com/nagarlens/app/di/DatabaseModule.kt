@@ -2,6 +2,7 @@ package com.nagarlens.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.nagarlens.app.core.database.AssetDao
 import com.nagarlens.app.core.database.EvidenceDao
 import com.nagarlens.app.core.database.NagarlensDatabase
 import dagger.Module
@@ -24,7 +25,9 @@ object DatabaseModule {
             context,
             NagarlensDatabase::class.java,
             "nagarlens_evidence.db"
-        ).build()
+        )
+            .addMigrations(NagarlensDatabase.MIGRATION_1_2)
+            .build()
     }
 
     @Provides
@@ -33,5 +36,13 @@ object DatabaseModule {
         database: NagarlensDatabase
     ): EvidenceDao {
         return database.evidenceDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAssetDao(
+        database: NagarlensDatabase
+    ): AssetDao {
+        return database.assetDao()
     }
 }

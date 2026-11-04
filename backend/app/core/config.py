@@ -21,11 +21,15 @@ class Settings(BaseSettings):
     )
     LOG_LEVEL: str = Field(default="INFO", description="Logging verbosity level")
 
-    # Security & CORS
+    # Security & Cryptographic Authentication
     SECRET_KEY: str = Field(
         default="dev_secret_key_minimum_32_chars_long_for_security_compliance",
         description="Cryptographic secret key for signing tokens",
     )
+    JWT_ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")
+    JWT_ISSUER: str = Field(default="nagarlens-auth", description="Trusted JWT token issuer")
+    JWT_AUDIENCE: str = Field(default="nagarlens-api", description="Trusted JWT token audience")
+
     CORS_ORIGINS: list[str] = Field(
         default=["http://localhost", "http://localhost:8000", "http://localhost:3000"],
         description="Allowed CORS origin domains",
