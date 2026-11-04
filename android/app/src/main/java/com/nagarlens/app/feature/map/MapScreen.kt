@@ -79,7 +79,7 @@ fun MapScreen(
         }
     }
 
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm UTC", Locale.US).apply {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 

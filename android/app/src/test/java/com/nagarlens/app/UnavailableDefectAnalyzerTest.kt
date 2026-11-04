@@ -6,10 +6,10 @@ import com.nagarlens.app.core.model.DefectCategory
 import com.nagarlens.app.core.model.Evidence
 import com.nagarlens.app.core.model.MediaType
 import com.nagarlens.app.core.model.ProcessingStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -21,7 +21,7 @@ class UnavailableDefectAnalyzerTest {
     val tempFolder = TemporaryFolder()
 
     private val sha256Hasher = Sha256Hasher()
-    private val analyzer = UnavailableDefectAnalyzer(sha256Hasher)
+    private val analyzer = UnavailableDefectAnalyzer(sha256Hasher, Dispatchers.Unconfined)
 
     @Test
     fun `getModelInfo reports model as unavailable when weights are missing`() {

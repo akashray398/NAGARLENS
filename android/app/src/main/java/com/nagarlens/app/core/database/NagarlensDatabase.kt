@@ -14,9 +14,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         InterventionEntity::class,
         InterventionEvidenceLinkEntity::class,
         InterventionStatusHistoryEntity::class,
-        OutcomeVerificationEntity::class
+        OutcomeVerificationEntity::class,
+        IncidentEntity::class,
+        NotificationEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class NagarlensDatabase : RoomDatabase() {
@@ -27,6 +29,8 @@ abstract class NagarlensDatabase : RoomDatabase() {
     abstract fun interventionDao(): InterventionDao
     abstract fun interventionEvidenceLinkDao(): InterventionEvidenceLinkDao
     abstract fun outcomeVerificationDao(): OutcomeVerificationDao
+    abstract fun incidentDao(): IncidentDao
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -153,6 +157,45 @@ abstract class NagarlensDatabase : RoomDatabase() {
                         `evidenceId` TEXT NOT NULL,
                         `relationshipType` TEXT NOT NULL,
                         `linkedAtUtc` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `incidents_records` (
+                        `id` TEXT NOT NULL,
+                        `assetId` TEXT NOT NULL,
+                        `assetCode` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT,
+                        `status` TEXT NOT NULL,
+                        `priority` TEXT NOT NULL,
+                        `defectCategory` TEXT NOT NULL,
+                        `reportedBy` TEXT NOT NULL,
+                        `createdTimestampUtc` INTEGER NOT NULL,
+                        `updatedTimestampUtc` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `notifications_records` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `message` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `severity` TEXT NOT NULL,
+                        `relatedAssetId` TEXT,
+                        `relatedIncidentId` TEXT,
+                        `isRead` INTEGER NOT NULL,
+                        `timestampUtc` INTEGER NOT NULL,
                         PRIMARY KEY(`id`)
                     )
                     """.trimIndent()

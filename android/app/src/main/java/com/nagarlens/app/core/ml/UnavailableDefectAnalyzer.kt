@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class UnavailableDefectAnalyzer @Inject constructor(
     private val sha256Hasher: Sha256Hasher,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : DefectAnalyzer {
 
     override fun getModelInfo(): ModelInfo {

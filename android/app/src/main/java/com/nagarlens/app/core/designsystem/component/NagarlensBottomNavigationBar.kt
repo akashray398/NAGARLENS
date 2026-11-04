@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.navigation.NagarlensDestination
 
 @Composable
@@ -37,10 +36,12 @@ fun NagarlensBottomNavigationBar(
 ) {
     val leftDestinations = listOf(
         NagarlensDestination.HOME,
-        NagarlensDestination.MAP
+        NagarlensDestination.MAP,
+        NagarlensDestination.ASSETS
     )
     val rightDestinations = listOf(
-        NagarlensDestination.ACTIVITY,
+        NagarlensDestination.INCIDENTS,
+        NagarlensDestination.ANALYTICS,
         NagarlensDestination.PROFILE
     )
 
@@ -59,7 +60,7 @@ fun NagarlensBottomNavigationBar(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Group: Home, Map
+            // Left Group: Home, Map, Assets
             leftDestinations.forEach { destination ->
                 val isSelected = currentRoute == destination.route
                 NavIconButton(
@@ -70,9 +71,9 @@ fun NagarlensBottomNavigationBar(
             }
 
             // Spacer gap for central Capture action button
-            Box(modifier = Modifier.size(56.dp))
+            Box(modifier = Modifier.size(48.dp))
 
-            // Right Group: Activity, Profile
+            // Right Group: Incidents, Analytics, Profile
             rightDestinations.forEach { destination ->
                 val isSelected = currentRoute == destination.route
                 NavIconButton(
@@ -89,7 +90,7 @@ fun NagarlensBottomNavigationBar(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .offset(y = (-16).dp)
-                .size(64.dp),
+                .size(60.dp),
             shape = CircleShape,
             containerColor = MaterialTheme.colorScheme.secondary,
             contentColor = Color.White,
@@ -121,11 +122,11 @@ private fun NavIconButton(
                 imageVector = destination.icon,
                 contentDescription = destination.title,
                 tint = color,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
             Text(
                 text = destination.title,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = color,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )

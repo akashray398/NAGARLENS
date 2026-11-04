@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.room.Room
 import com.nagarlens.app.core.database.AssetDao
 import com.nagarlens.app.core.database.EvidenceDao
+import com.nagarlens.app.core.database.IncidentDao
 import com.nagarlens.app.core.database.InterventionDao
 import com.nagarlens.app.core.database.InterventionEvidenceLinkDao
 import com.nagarlens.app.core.database.NagarlensDatabase
+import com.nagarlens.app.core.database.NotificationDao
 import com.nagarlens.app.core.database.ObservationDao
 import com.nagarlens.app.core.database.ObservationEvidenceLinkDao
 import com.nagarlens.app.core.database.OutcomeVerificationDao
@@ -34,7 +36,8 @@ object DatabaseModule {
             .addMigrations(
                 NagarlensDatabase.MIGRATION_1_2,
                 NagarlensDatabase.MIGRATION_2_3,
-                NagarlensDatabase.MIGRATION_3_4
+                NagarlensDatabase.MIGRATION_3_4,
+                NagarlensDatabase.MIGRATION_4_5
             )
             .build()
     }
@@ -43,55 +46,53 @@ object DatabaseModule {
     @Singleton
     fun provideEvidenceDao(
         database: NagarlensDatabase
-    ): EvidenceDao {
-        return database.evidenceDao()
-    }
+    ): EvidenceDao = database.evidenceDao()
 
     @Provides
     @Singleton
     fun provideAssetDao(
         database: NagarlensDatabase
-    ): AssetDao {
-        return database.assetDao()
-    }
+    ): AssetDao = database.assetDao()
 
     @Provides
     @Singleton
     fun provideObservationDao(
         database: NagarlensDatabase
-    ): ObservationDao {
-        return database.observationDao()
-    }
+    ): ObservationDao = database.observationDao()
 
     @Provides
     @Singleton
     fun provideObservationEvidenceLinkDao(
         database: NagarlensDatabase
-    ): ObservationEvidenceLinkDao {
-        return database.observationEvidenceLinkDao()
-    }
+    ): ObservationEvidenceLinkDao = database.observationEvidenceLinkDao()
 
     @Provides
     @Singleton
     fun provideInterventionDao(
         database: NagarlensDatabase
-    ): InterventionDao {
-        return database.interventionDao()
-    }
+    ): InterventionDao = database.interventionDao()
 
     @Provides
     @Singleton
     fun provideInterventionEvidenceLinkDao(
         database: NagarlensDatabase
-    ): InterventionEvidenceLinkDao {
-        return database.interventionEvidenceLinkDao()
-    }
+    ): InterventionEvidenceLinkDao = database.interventionEvidenceLinkDao()
 
     @Provides
     @Singleton
     fun provideOutcomeVerificationDao(
         database: NagarlensDatabase
-    ): OutcomeVerificationDao {
-        return database.outcomeVerificationDao()
-    }
+    ): OutcomeVerificationDao = database.outcomeVerificationDao()
+
+    @Provides
+    @Singleton
+    fun provideIncidentDao(
+        database: NagarlensDatabase
+    ): IncidentDao = database.incidentDao()
+
+    @Provides
+    @Singleton
+    fun provideNotificationDao(
+        database: NagarlensDatabase
+    ): NotificationDao = database.notificationDao()
 }
