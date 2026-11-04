@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 // NAGARLENS Outdoor High-Contrast Field Color Tokens
 val NagarNavy = Color(0xFF0B192C)
 val NagarBlue = Color(0xFF1E3E62)
+val NagarLightBlue = Color(0xFF60A5FA)
 val SignalAmber = Color(0xFFFF6500)
 val AlertRed = Color(0xFFD9534F)
 val SafetyGreen = Color(0xFF28A745)

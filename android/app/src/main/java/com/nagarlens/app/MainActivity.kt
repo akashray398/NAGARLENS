@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.nagarlens.app.core.designsystem.theme.NagarlensTheme
-import com.nagarlens.app.core.navigation.NagarlensNavHost
+import com.nagarlens.app.core.shell.NagarlensApp
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NagarlensTheme {
-                NagarlensNavHost()
+                NagarlensApp()
             }
         }
     }

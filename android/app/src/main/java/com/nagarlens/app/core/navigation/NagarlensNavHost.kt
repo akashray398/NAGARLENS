@@ -1,26 +1,51 @@
 package com.nagarlens.app.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import com.nagarlens.app.feature.activity.ActivityScreen
+import com.nagarlens.app.feature.capture.CaptureScreen
 import com.nagarlens.app.feature.home.HomeScreen
-
-object NagarlensDestinations {
-    const val HOME_ROUTE = "home"
-}
+import com.nagarlens.app.feature.map.MapScreen
+import com.nagarlens.app.feature.profile.ProfileScreen
 
 @Composable
 fun NagarlensNavHost(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController,
+    modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = NagarlensDestinations.HOME_ROUTE
+        startDestination = NagarlensDestination.HOME.route,
+        modifier = modifier
     ) {
-        composable(NagarlensDestinations.HOME_ROUTE) {
-            HomeScreen()
+        composable(NagarlensDestination.HOME.route) {
+            HomeScreen(
+                onNavigateToMap = {
+                    navController.navigate(NagarlensDestination.MAP.route)
+                },
+                onNavigateToCapture = {
+                    navController.navigate(NagarlensDestination.CAPTURE.route)
+                }
+            )
+        }
+        composable(NagarlensDestination.MAP.route) {
+            MapScreen(
+                onNavigateToCapture = {
+                    navController.navigate(NagarlensDestination.CAPTURE.route)
+                }
+            )
+        }
+        composable(NagarlensDestination.CAPTURE.route) {
+            CaptureScreen()
+        }
+        composable(NagarlensDestination.ACTIVITY.route) {
+            ActivityScreen()
+        }
+        composable(NagarlensDestination.PROFILE.route) {
+            ProfileScreen()
         }
     }
 }

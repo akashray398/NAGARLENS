@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = NagarNavy,
+    primary = NagarLightBlue,
     onPrimary = FieldTextLight,
     primaryContainer = NagarBlue,
     onPrimaryContainer = FieldTextLight,
@@ -22,7 +22,9 @@ private val DarkColorScheme = darkColorScheme(
     background = FieldSurfaceDark,
     onBackground = FieldTextLight,
     surface = FieldSurfaceDark,
-    onSurface = FieldTextLight
+    onSurface = FieldTextLight,
+    surfaceVariant = NagarBlue,
+    onSurfaceVariant = FieldTextLight
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -37,7 +39,9 @@ private val LightColorScheme = lightColorScheme(
     background = FieldSurfaceLight,
     onBackground = FieldTextDark,
     surface = FieldSurfaceLight,
-    onSurface = FieldTextDark
+    onSurface = FieldTextDark,
+    surfaceVariant = FieldSurfaceLight,
+    onSurfaceVariant = FieldTextDark
 )
 
 @Composable
@@ -58,6 +62,7 @@ fun NagarlensTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = NagarlensTypography,
+        shapes = NagarlensShapes,
         content = content
     )
 }

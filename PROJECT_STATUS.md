@@ -1,8 +1,8 @@
 # NAGARLENS — Project Status & Roadmap
 
-> **Current Status:** Backend Foundation Implemented (Runtime Validation Pending)
-> **Active Milestone:** `M0.3 — Backend Foundation`
-> **Last Updated:** M0.3 Code Implemented (Runtime Validation Pending)
+> **Current Status:** Android Design System & Navigation Foundation Implemented
+> **Active Milestone:** `M0.4 — Design System & Navigation Implementation`
+> **Last Updated:** Milestone M0.4 Complete
 
 ---
 
@@ -13,8 +13,8 @@
 | **M0.1** | Repository Foundation & Architectural Baseline | **COMPLETED** | Current |
 | **M0.2** | Core Android App Shell & Architecture Skeleton | **COMPLETED** | Current |
 | **M0.3** | Modular Monolith Backend Foundation & PostGIS Setup | **IMPLEMENTED — RUNTIME VALIDATION PENDING** | Current |
-| **M0.4** | Edge Camera Capture & Offline Queue Engine | PLANNED | Pending Approval |
-| **M0.5** | Media Ingestion & Evidence Integrity Pipeline | PLANNED | TBD |
+| **M0.4** | Design System & Navigation Implementation | **COMPLETED** | Current |
+| **M0.5** | Media Ingestion & Evidence Integrity Pipeline | PLANNED | Pending Approval |
 | **M0.6** | AI Computer Vision Drainage Defect Model Pipeline | PLANNED | TBD |
 | **M0.7** | Asset Memory Timeline & Human Verification Workflow | PLANNED | TBD |
 
@@ -39,11 +39,11 @@
 - [ ] `:core:network` (Retrofit + OkHttp)
 - [ ] `:core:database` (Room database & DAO)
 - [ ] `:core:model` (Domain models & DTOs)
-- [x] `:core:designsystem` (Material 3 Theme, Field Colors & Typography)
+- [x] `:core:designsystem` (Material 3 Theme, Field Colors, Typography, Shapes & Components)
 - [ ] `:core:location` (GPS & Spatial Context Provider)
-- [ ] `:feature:capture` (CameraX observation capture)
+- [x] `:feature:capture` (Observation capture screen foundation & GNSS lock UI)
 - [ ] `:feature:sync` (Offline queue background manager)
-- [ ] `:feature:asset-memory` (Timeline view & asset details)
+- [x] `:feature:asset-memory` (Map screen, Activity history, and Profile foundations)
 
 ### Backend Services (`/backend` & `/infrastructure`)
 - [x] Modular FastAPI Core (`app.core`, `app.main`)
@@ -68,6 +68,7 @@
 4. **SHA-256 Media Hashing:** Cryptographic hashing performed client-side upon capture to guarantee evidence immutability and anti-tampering.
 5. **Gradle Version Catalog & Single-Module App Shell:** Established single `:app` module structure with Kotlin 2.0.0, Compose, Material 3, and Hilt DI.
 6. **Backend Foundation Architecture:** Implemented FastAPI modular monolith foundation with Pydantic Settings v2, async SQLAlchemy 2.0, Alembic PostGIS migrations, and health routes (`/health/live`, `/health/ready`).
+7. **Design System & Navigation Shell (M0.4):** Implemented Material 3 field design tokens, custom buttons/cards/badges/app bars, and 5-destination bottom navigation architecture (Home, Map, Capture, Activity, Profile) with prominent central Capture FAB action button.
 
 ---
 
@@ -81,4 +82,4 @@
 
 ## 5. Next Task
 
-- **Task M0.3 Runtime Validation & Task M0.4 Edge Camera Capture:** Execute container runtime validation when Docker environment is active, then proceed to M0.4.
+- **Task M0.5:** Media Ingestion & Evidence Integrity Pipeline (awaiting user approval).
