@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
 from app.core.logging import logger, setup_logging
+from app.core.middleware import SecurityHeadersMiddleware
 from app.core.security import configure_cors
 
 
@@ -27,6 +28,7 @@ def create_application() -> FastAPI:
         redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
     )
 
+    app.add_middleware(SecurityHeadersMiddleware)
     configure_cors(app)
     app.include_router(api_v1_router, prefix="/api/v1")
 
