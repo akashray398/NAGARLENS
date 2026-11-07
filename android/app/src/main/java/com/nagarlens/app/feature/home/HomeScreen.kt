@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,9 +29,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
+import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
 import com.nagarlens.app.core.designsystem.theme.SignalAmber
+import com.nagarlens.app.core.model.RiskLevel
 
 @Composable
 fun HomeScreen(
@@ -122,6 +125,59 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(NagarlensSpacing.small))
 
+            // Predictive Intelligence Early Warning Alert Card
+            NagarlensCard(containerColor = Color(0xFF1E242B)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "EARLY WARNING ENGINE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = SignalAmber,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(AlertRed, shape = MaterialTheme.shapes.extraSmall)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "HIGH RISK (78%)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
+                    Text(
+                        text = "Asset NAG-CB-000104 • Catch Basin Invert",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Predictive Signal: High risk of progressive drainage channel overflow due to recurring silt accumulation.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
+                    )
+
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
+                    Text(
+                        text = "Action: Schedule physical work order inspection within 48 hours.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SafetyGreen,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+
             // Live Infrastructure Metrics Cards
             uiState.metrics?.let { metrics ->
                 NagarlensCard {
@@ -146,51 +202,6 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-
-            // Deployment Domain Card
-            NagarlensCard {
-                Text(
-                    text = "Initial Deployment Domain",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-                Text(
-                    text = uiState.activeDomain,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
-
-            // Spatial Map Viewport Preview
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .background(Color(0xFF1E242B), shape = MaterialTheme.shapes.medium)
-                    .border(2.dp, MaterialTheme.colorScheme.secondary, shape = MaterialTheme.shapes.medium)
-                    .padding(NagarlensSpacing.medium)
-            ) {
-                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "LIVING MAP VIEWPORT", style = MaterialTheme.typography.labelSmall, color = Color.LightGray)
-                        Text(text = "12.971°N, 77.594°E", style = MaterialTheme.typography.labelSmall, color = SafetyGreen, fontWeight = FontWeight.Bold)
-                    }
-                    Text(
-                        text = "Spatial Asset Grid Active • Offline Tile Fallback Ready",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
 
             // Quick Actions
             Row(
