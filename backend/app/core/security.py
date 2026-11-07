@@ -1,5 +1,8 @@
-"""NAGARLENS — Cryptographic JWT Authentication & Role-Based Authorization Dependencies."""
+"""NAGARLENS — Cryptographic JWT Authentication, Password Hashing, and RBAC Dependencies."""
 
+import bcrypt
+import hashlib
+from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -14,7 +17,55 @@ security_bearer = HTTPBearer(auto_error=False)
 class AuthenticatedUser(BaseModel):
     user_id: str
     username: str
+    email: str
     role: str  # "field_worker", "reviewer", "administrator"
+    org_id: str = "org_bbmp_central"
+
+
+def hash_password(password: str) -> str:
+    """Hashes plaintext password using Bcrypt with salt."""
+    pwd_bytes = password.encode('utf-8')[:72]  # Truncate to 72 bytes for Bcrypt standard
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifies plaintext password against stored Bcrypt hash."""
+    pwd_bytes = plain_password.encode('utf-8')[:72]
+    try:
+        return bcrypt.checkpw(pwd_bytes, hashed_password.encode('utf-8'))
+    except Exception:
+        return False
+
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    """Generates a short-lived cryptographic JWT Access Token."""
+    to_encode = data.copy()
+    now = datetime.now(timezone.utc)
+    expire = now + (expires_delta or timedelta(minutes=60))
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
+        "type": "access"
+    })
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_refresh_token(data: dict) -> str:
+    """Generates a long-lived JWT Refresh Token for session rotation."""
+    to_encode = data.copy()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=7)
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
+        "type": "refresh"
+    })
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def configure_cors(app) -> None:
@@ -25,13 +76,13 @@ def configure_cors(app) -> None:
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 
 
-def decode_and_verify_jwt(token: str) -> AuthenticatedUser:
-    """Decodes and cryptographically verifies JWT Bearer token using secret key, algorithm, issuer, and audience."""
+def decode_and_verify_jwt(token: str, expected_type: str = "access") -> AuthenticatedUser:
+    """Decodes and cryptographically verifies JWT Bearer token."""
     try:
         payload = jwt.decode(
             token,
@@ -67,20 +118,31 @@ def decode_and_verify_jwt(token: str) -> AuthenticatedUser:
             detail=f"Authentication failed: Invalid or corrupt JWT signature ({str(exc)}).",
         )
 
+    token_type = payload.get("type", "access")
+    if token_type != expected_type:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication failed: Expected '{expected_type}' token, got '{token_type}'.",
+        )
+
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed: Token payload missing 'sub' / 'user_id' claim.",
+            detail="Authentication failed: Token payload missing 'sub' claim.",
         )
 
     role = str(payload.get("role", "field_worker")).lower().strip()
     username = str(payload.get("username") or f"user_{user_id}")
+    email = str(payload.get("email") or f"{username}@nagarlens.gov")
+    org_id = str(payload.get("org_id") or "org_bbmp_central")
 
     return AuthenticatedUser(
         user_id=str(user_id),
         username=username,
+        email=email,
         role=role,
+        org_id=org_id
     )
 
 
@@ -94,16 +156,28 @@ async def get_current_user(
             detail="Authentication required. Missing or empty Bearer Authorization header.",
         )
 
-    return decode_and_verify_jwt(credentials.credentials)
+    return decode_and_verify_jwt(credentials.credentials, expected_type="access")
 
 
 async def get_current_reviewer(
     user: AuthenticatedUser = Depends(get_current_user),
 ) -> AuthenticatedUser:
-    """Enforces reviewer/administrator role authorization for verification workflows."""
+    """Enforces reviewer/administrator role authorization."""
     if user.role not in ("reviewer", "administrator", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Reviewer or administrator privileges required to perform asset verification.",
+        )
+    return user
+
+
+async def get_current_admin(
+    user: AuthenticatedUser = Depends(get_current_user),
+) -> AuthenticatedUser:
+    """Enforces administrator role authorization."""
+    if user.role not in ("administrator", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Administrator privileges required.",
         )
     return user
