@@ -2,18 +2,22 @@ package com.nagarlens.app.feature.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nagarlens.app.core.location.AssetCluster
 import com.nagarlens.app.core.location.LocationData
 import com.nagarlens.app.core.location.LocationProvider
+import com.nagarlens.app.core.location.SpatialQueryEngine
 import com.nagarlens.app.core.model.Asset
 import com.nagarlens.app.core.model.AssetCategory
 import com.nagarlens.app.core.model.AssetTimeline
-import com.nagarlens.app.core.model.AssetVerificationStatus
 import com.nagarlens.app.core.model.ConditionSeverity
 import com.nagarlens.app.core.model.DefectCategory
+import com.nagarlens.app.core.model.DigitalTwinAsset
 import com.nagarlens.app.core.model.InterventionType
 import com.nagarlens.app.core.model.ObservationType
+import com.nagarlens.app.core.model.SpatialBoundary
 import com.nagarlens.app.core.model.VerificationDecision
 import com.nagarlens.app.core.repository.AssetRepository
+import com.nagarlens.app.core.repository.SpatialRepository
 import com.nagarlens.app.core.repository.TemporalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,11 +29,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class MapUiState(
+    val searchQuery: String = "",
     val selectedFilter: String = "All Categories",
     val activeFilters: List<String> = listOf("All Categories", "Catch Basins", "Storm Water Drains", "Manholes", "Culverts"),
     val activeWard: String = "Ward 12 — Bangalore Central",
     val assets: List<Asset> = emptyList(),
+    val spatialClusters: List<AssetCluster> = emptyList(),
+    val spatialBoundaries: List<SpatialBoundary> = emptyList(),
     val selectedAsset: Asset? = null,
+    val selectedDigitalTwin: DigitalTwinAsset? = null,
     val selectedAssetTimeline: AssetTimeline? = null,
     val isRegistrationDialogOpen: Boolean = false,
     val isObservationDialogOpen: Boolean = false,
@@ -41,6 +49,7 @@ data class MapUiState(
 @HiltViewModel
 class MapViewModel @Inject constructor(
     private val assetRepository: AssetRepository,
+    private val spatialRepository: SpatialRepository,
     private val temporalRepository: TemporalRepository,
     private val locationProvider: LocationProvider
 ) : ViewModel() {
@@ -52,8 +61,19 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             assetRepository.getAllAssets().collectLatest { list ->
                 _uiState.update { it.copy(assets = list) }
+                val clusters = spatialRepository.getSpatialClusters(radiusMeters = 50.0)
+                _uiState.update { it.copy(spatialClusters = clusters) }
             }
         }
+        viewModelScope.launch {
+            spatialRepository.observeSpatialBoundaries().collectLatest { boundaries ->
+                _uiState.update { it.copy(spatialBoundaries = boundaries) }
+            }
+        }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun selectFilter(filter: String) {
@@ -61,9 +81,13 @@ class MapViewModel @Inject constructor(
     }
 
     fun selectAsset(asset: Asset?) {
-        _uiState.update { it.copy(selectedAsset = asset, selectedAssetTimeline = null) }
+        _uiState.update { it.copy(selectedAsset = asset, selectedAssetTimeline = null, selectedDigitalTwin = null) }
         if (asset != null) {
             viewModelScope.launch {
+                val loc = _uiState.value.userLocation
+                val digitalTwin = spatialRepository.getDigitalTwinAsset(asset.id, loc?.latitude, loc?.longitude)
+                _uiState.update { it.copy(selectedDigitalTwin = digitalTwin) }
+
                 temporalRepository.getAssetTimeline(asset.id, asset.assetCode).collectLatest { timeline ->
                     _uiState.update { it.copy(selectedAssetTimeline = timeline) }
                 }

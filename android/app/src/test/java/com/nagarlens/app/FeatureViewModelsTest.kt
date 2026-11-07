@@ -1,6 +1,7 @@
 package com.nagarlens.app
 
 import com.nagarlens.app.core.camera.CameraXController
+import com.nagarlens.app.core.location.AssetCluster
 import com.nagarlens.app.core.location.LocationData
 import com.nagarlens.app.core.location.LocationProvider
 import com.nagarlens.app.core.model.Asset
@@ -8,17 +9,20 @@ import com.nagarlens.app.core.model.AssetCategory
 import com.nagarlens.app.core.model.AssetTimeline
 import com.nagarlens.app.core.model.ConditionSeverity
 import com.nagarlens.app.core.model.DefectCategory
+import com.nagarlens.app.core.model.DigitalTwinAsset
 import com.nagarlens.app.core.model.Evidence
 import com.nagarlens.app.core.model.InfrastructureObservation
 import com.nagarlens.app.core.model.Intervention
 import com.nagarlens.app.core.model.InterventionType
 import com.nagarlens.app.core.model.ObservationType
 import com.nagarlens.app.core.model.OutcomeVerification
+import com.nagarlens.app.core.model.SpatialBoundary
 import com.nagarlens.app.core.model.SyncStatus
 import com.nagarlens.app.core.model.VerificationDecision
 import com.nagarlens.app.core.model.VerificationOutcome
 import com.nagarlens.app.core.repository.AssetRepository
 import com.nagarlens.app.core.repository.EvidenceRepository
+import com.nagarlens.app.core.repository.SpatialRepository
 import com.nagarlens.app.core.repository.TemporalRepository
 import com.nagarlens.app.feature.activity.ActivityViewModel
 import com.nagarlens.app.feature.capture.CameraMode
@@ -57,10 +61,11 @@ class FeatureViewModelsTest {
     @Test
     fun `mapViewModel initializes state with active catchment bounds`() {
         val fakeAssetRepository = FakeAssetRepository()
+        val fakeSpatialRepository = FakeSpatialRepository()
         val fakeTemporalRepository = FakeTemporalRepository()
         val fakeLocationProvider = FakeLocationProvider()
 
-        val viewModel = MapViewModel(fakeAssetRepository, fakeTemporalRepository, fakeLocationProvider)
+        val viewModel = MapViewModel(fakeAssetRepository, fakeSpatialRepository, fakeTemporalRepository, fakeLocationProvider)
         val state = viewModel.uiState.value
         assertNotNull(state.activeWard)
         assertEquals(5, state.activeFilters.size)
@@ -107,6 +112,14 @@ class FeatureViewModelsTest {
         override fun getAssetsInViewport(minLat: Double, minLon: Double, maxLat: Double, maxLon: Double): Flow<List<Asset>> = flowOf(emptyList())
         override suspend fun registerAsset(category: AssetCategory, latitude: Double, longitude: Double, altitudeMeters: Float?, description: String?, evidenceId: String?): Result<Asset> = Result.failure(Exception())
         override suspend fun submitVerification(assetId: String, decision: VerificationDecision, reviewerId: String, reason: String?): Result<Asset> = Result.failure(Exception())
+    }
+
+    private class FakeSpatialRepository : SpatialRepository {
+        override fun observeNearbyAssets(lat: Double, lon: Double, radiusMeters: Double): Flow<List<Pair<Asset, Double>>> = flowOf(emptyList())
+        override fun observeViewportAssets(minLat: Double, minLon: Double, maxLat: Double, maxLon: Double): Flow<List<Asset>> = flowOf(emptyList())
+        override suspend fun getDigitalTwinAsset(assetId: String, userLat: Double?, userLon: Double?): DigitalTwinAsset? = null
+        override fun observeSpatialBoundaries(): Flow<List<SpatialBoundary>> = flowOf(emptyList())
+        override suspend fun getSpatialClusters(radiusMeters: Double): List<AssetCluster> = emptyList()
     }
 
     private class FakeTemporalRepository : TemporalRepository {

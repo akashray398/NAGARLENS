@@ -24,7 +24,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -56,7 +55,6 @@ import com.nagarlens.app.core.model.ConditionSeverity
 import com.nagarlens.app.core.model.DefectCategory
 import com.nagarlens.app.core.model.InterventionType
 import com.nagarlens.app.core.model.ObservationType
-import com.nagarlens.app.core.model.VerificationDecision
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,13 +68,17 @@ fun MapScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val filteredAssets = uiState.assets.filter { asset ->
-        when (uiState.selectedFilter) {
+        val matchesCategory = when (uiState.selectedFilter) {
             "Catch Basins" -> asset.assetCategory == AssetCategory.CATCH_BASIN
             "Storm Water Drains" -> asset.assetCategory == AssetCategory.STORM_WATER_DRAIN
             "Manholes" -> asset.assetCategory == AssetCategory.MANHOLE
             "Culverts" -> asset.assetCategory == AssetCategory.CULVERT
             else -> true
         }
+        val matchesSearch = uiState.searchQuery.isBlank() ||
+                asset.assetCode.contains(uiState.searchQuery, ignoreCase = true) ||
+                asset.description?.contains(uiState.searchQuery, ignoreCase = true) == true
+        matchesCategory && matchesSearch
     }
 
     val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'", Locale.US).apply {
@@ -89,12 +91,23 @@ fun MapScreen(
             .padding(NagarlensSpacing.medium)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            NagarlensSectionHeader(title = "Living Infrastructure Map & Memory Graph")
+            NagarlensSectionHeader(title = "Living Infrastructure Map & Spatial Twin")
 
             Text(
                 text = uiState.activeWard,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
+            )
+
+            Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+
+            // Spatial Search input
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = { viewModel.onSearchQueryChange(it) },
+                label = { Text("Filter map by Code or Description") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(NagarlensSpacing.small))
@@ -138,28 +151,28 @@ fun MapScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "MAP VIEWPORT: 12.971°N, 77.594°E • Map Canvas Active (Offline Tile Fallback)",
+                            text = "VIEWPORT: 12.960°-12.985°N, 77.580°-77.610°E",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.LightGray
                         )
                         Text(
-                            text = "${filteredAssets.size} Assets Displayed",
+                            text = "${filteredAssets.size} Assets • ${uiState.spatialClusters.size} Clusters",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = SafetyGreen
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.small))
 
-                    // Spatial Asset Grid
+                    // Spatial Asset & Cluster Grid List
                     if (filteredAssets.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No assets registered in this catchment region.\nTap + REGISTER to create a new asset.",
+                                text = "No assets registered in this viewport region.\nTap + REGISTER to create a new spatial asset.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray,
                                 textAlign = TextAlign.Center
@@ -231,7 +244,7 @@ fun MapScreen(
                 }
             }
 
-            // Selected Asset Memory Timeline Drawer Card
+            // Selected Asset Digital Twin Memory Drawer Card
             uiState.selectedAsset?.let { asset ->
                 Spacer(modifier = Modifier.height(NagarlensSpacing.small))
                 NagarlensCard {
@@ -242,7 +255,7 @@ fun MapScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Asset Memory Graph: ${asset.assetCode}",
+                                text = "Digital Twin: ${asset.assetCode}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -251,7 +264,18 @@ fun MapScreen(
                             }
                         }
                         Text(text = "Category: ${asset.assetCategory.name} • Status: ${asset.verificationStatus.name}")
-                        Text(text = "UUID: ${asset.id}", style = MaterialTheme.typography.bodySmall)
+                        Text(text = "WGS84: %.6f°N, %.6f°E".format(asset.latitude, asset.longitude), style = MaterialTheme.typography.bodySmall)
+
+                        uiState.selectedDigitalTwin?.let { twin ->
+                            twin.distanceToUserMeters?.let { dist ->
+                                Text(
+                                    text = "Spatial Distance to Inspector: %.1fm (Heading: %.0f°)".format(dist, twin.bearingFromUserDegrees ?: 0.0),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = SafetyGreen,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(NagarlensSpacing.small))
                         Text(
@@ -265,7 +289,7 @@ fun MapScreen(
                             LazyColumn(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(140.dp)
+                                    .height(110.dp)
                                     .padding(vertical = NagarlensSpacing.extraSmall)
                             ) {
                                 items(timeline.events) { event ->
