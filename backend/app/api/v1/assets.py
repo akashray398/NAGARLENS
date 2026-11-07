@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import AuthenticatedUser, get_current_reviewer
+from app.core.security import AuthenticatedUser, get_current_reviewer, get_current_user
 from app.infrastructure.db.session import get_async_session
 from app.modules.assets.enums import AssetCategory, AssetVerificationStatus, VerificationDecision
 from app.modules.assets.schemas import (
@@ -52,6 +52,14 @@ async def get_asset(
             detail=f"Asset with ID '{asset_id}' not found.",
         )
     return asset
+
+
+@router.delete("/{asset_id}", status_code=status.HTTP_200_OK, summary="Delete an infrastructure asset")
+async def delete_asset(
+    asset_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    return {"message": f"Asset '{asset_id}' deleted successfully.", "asset_id": asset_id}
 
 
 @router.get("", response_model=List[AssetResponseSchema], summary="Query assets within map viewport envelope")

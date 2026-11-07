@@ -10,5 +10,5 @@ data class HomeUiState(
     val activeWard: String = "Ward 12 — Bangalore Central",
     val userName: String = "Rajesh Sharma",
     val metrics: InfrastructureMetrics? = null,
-    val statusText: String = "System Shell Operational — Master Prompt 02"
+    val statusText: String = "NAGARLENS v1.0.0 • Infrastructure Intelligence Network"
 )

@@ -28,6 +28,7 @@ import com.nagarlens.app.core.repository.EvidenceRepository
 import com.nagarlens.app.core.repository.InvestigationRepository
 import com.nagarlens.app.core.repository.SpatialRepository
 import com.nagarlens.app.core.repository.TemporalRepository
+import com.nagarlens.app.core.security.SecurityHardeningManager
 import com.nagarlens.app.feature.activity.ActivityViewModel
 import com.nagarlens.app.feature.capture.CameraMode
 import com.nagarlens.app.feature.capture.CaptureViewModel
@@ -100,7 +101,9 @@ class FeatureViewModelsTest {
 
     @Test
     fun `profileViewModel initializes state with auditor identity`() {
-        val viewModel = ProfileViewModel()
+        val fakeEvidenceRepository = FakeEvidenceRepository()
+        val securityManager = SecurityHardeningManager()
+        val viewModel = ProfileViewModel(fakeEvidenceRepository, securityManager)
         val state = viewModel.uiState.value
         assertNotNull(state.inspectorName)
         assertNotNull(state.assignedWard)
@@ -117,6 +120,7 @@ class FeatureViewModelsTest {
         override fun getAssetsInViewport(minLat: Double, minLon: Double, maxLat: Double, maxLon: Double): Flow<List<Asset>> = flowOf(emptyList())
         override suspend fun registerAsset(category: AssetCategory, latitude: Double, longitude: Double, altitudeMeters: Float?, description: String?, evidenceId: String?): Result<Asset> = Result.failure(Exception())
         override suspend fun submitVerification(assetId: String, decision: VerificationDecision, reviewerId: String, reason: String?): Result<Asset> = Result.failure(Exception())
+        override suspend fun deleteAsset(assetId: String): Result<Unit> = Result.success(Unit)
     }
 
     private class FakeSpatialRepository : SpatialRepository {

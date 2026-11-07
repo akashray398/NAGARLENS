@@ -1,6 +1,7 @@
 package com.nagarlens.app.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,36 +28,38 @@ fun NagarlensTopAppBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
+            .background(Color(0xFF1E242B))
+            .border(width = 1.dp, color = Color(0xFF2A323D))
             .statusBarsPadding()
-            .padding(horizontal = NagarlensSpacing.medium, vertical = NagarlensSpacing.medium)
+            .padding(horizontal = NagarlensSpacing.medium, vertical = NagarlensSpacing.small)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "NAGARLENS",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
+            Column {
+                Text(
+                    text = "NAGARLENS",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.LightGray
+                    )
+                }
+            }
 
             Text(
-                text = title,
+                text = title.uppercase(),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary,
+                color = Color.White,
                 fontWeight = FontWeight.Bold
-            )
-        }
-
-        if (subtitle != null) {
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
         }
     }

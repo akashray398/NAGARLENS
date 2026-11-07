@@ -1,7 +1,6 @@
 package com.nagarlens.app.feature.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,7 +31,6 @@ import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
 import com.nagarlens.app.core.designsystem.theme.SignalAmber
-import com.nagarlens.app.core.model.RiskLevel
 
 @Composable
 fun HomeScreen(
@@ -51,38 +48,6 @@ fun HomeScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            // Hero Brand Header
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = uiState.appTitle,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-
-                Text(
-                    text = uiState.category,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = "\"${uiState.tagline}\"",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = NagarlensSpacing.extraSmall)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
-
             // Inspector Session Banner
             NagarlensCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
                 Row(

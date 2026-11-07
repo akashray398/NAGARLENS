@@ -1,6 +1,7 @@
 package com.nagarlens.app.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -25,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nagarlens.app.core.navigation.NagarlensDestination
 
 @Composable
@@ -36,12 +40,10 @@ fun NagarlensBottomNavigationBar(
 ) {
     val leftDestinations = listOf(
         NagarlensDestination.HOME,
-        NagarlensDestination.MAP,
-        NagarlensDestination.ASSETS
+        NagarlensDestination.MAP
     )
     val rightDestinations = listOf(
         NagarlensDestination.INCIDENTS,
-        NagarlensDestination.ANALYTICS,
         NagarlensDestination.PROFILE
     )
 
@@ -54,13 +56,14 @@ fun NagarlensBottomNavigationBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(68.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .height(64.dp)
+                .background(Color(0xFF1E242B))
+                .border(width = 1.dp, color = Color(0xFF2A323D))
                 .align(Alignment.BottomCenter),
-            horizontalArrangement = Arrangement.SpaceAround,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Group: Home, Map, Assets
+            // Left Group: Home, Map
             leftDestinations.forEach { destination ->
                 val isSelected = currentRoute == destination.route
                 NavIconButton(
@@ -71,9 +74,9 @@ fun NagarlensBottomNavigationBar(
             }
 
             // Spacer gap for central Capture action button
-            Box(modifier = Modifier.size(48.dp))
+            Box(modifier = Modifier.width(56.dp))
 
-            // Right Group: Incidents, Analytics, Profile
+            // Right Group: Incidents, Profile
             rightDestinations.forEach { destination ->
                 val isSelected = currentRoute == destination.route
                 NavIconButton(
@@ -89,8 +92,8 @@ fun NagarlensBottomNavigationBar(
             onClick = { onNavigateToDestination(NagarlensDestination.CAPTURE) },
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = (-16).dp)
-                .size(60.dp),
+                .offset(y = (-14).dp)
+                .size(56.dp),
             shape = CircleShape,
             containerColor = MaterialTheme.colorScheme.secondary,
             contentColor = Color.White,
@@ -99,7 +102,7 @@ fun NagarlensBottomNavigationBar(
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = NagarlensDestination.CAPTURE.title,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(30.dp)
             )
         }
     }
@@ -111,9 +114,12 @@ private fun NavIconButton(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.LightGray
 
-    IconButton(onClick = onClick) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.width(72.dp)
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -122,13 +128,16 @@ private fun NavIconButton(
                 imageVector = destination.icon,
                 contentDescription = destination.title,
                 tint = color,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(20.dp)
             )
             Text(
                 text = destination.title,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                 color = color,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

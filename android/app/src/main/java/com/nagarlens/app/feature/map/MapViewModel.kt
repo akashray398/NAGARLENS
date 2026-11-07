@@ -42,6 +42,7 @@ data class MapUiState(
     val isRegistrationDialogOpen: Boolean = false,
     val isObservationDialogOpen: Boolean = false,
     val isInterventionDialogOpen: Boolean = false,
+    val isDeleteConfirmationDialogOpen: Boolean = false,
     val userLocation: LocationData? = null,
     val uiMessage: String? = null
 )
@@ -118,6 +119,41 @@ class MapViewModel @Inject constructor(
 
     fun closeInterventionDialog() {
         _uiState.update { it.copy(isInterventionDialogOpen = false) }
+    }
+
+    fun openDeleteConfirmationDialog() {
+        _uiState.update { it.copy(isDeleteConfirmationDialogOpen = true) }
+    }
+
+    fun closeDeleteConfirmationDialog() {
+        _uiState.update { it.copy(isDeleteConfirmationDialogOpen = false) }
+    }
+
+    fun deleteSelectedAsset() {
+        val asset = _uiState.value.selectedAsset ?: return
+        viewModelScope.launch {
+            assetRepository.deleteAsset(asset.id).fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            isDeleteConfirmationDialogOpen = false,
+                            selectedAsset = null,
+                            selectedDigitalTwin = null,
+                            selectedAssetTimeline = null,
+                            uiMessage = "Asset ${asset.assetCode} deleted successfully."
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isDeleteConfirmationDialogOpen = false,
+                            uiMessage = "Delete failed: ${error.message}"
+                        )
+                    }
+                }
+            )
+        }
     }
 
     fun refreshUserLocation() {

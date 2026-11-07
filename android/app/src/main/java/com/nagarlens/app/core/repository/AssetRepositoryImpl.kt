@@ -112,4 +112,13 @@ class AssetRepositoryImpl @Inject constructor(
             Result.failure(exc)
         }
     }
+
+    override suspend fun deleteAsset(assetId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            assetDao.deleteAsset(assetId)
+            Result.success(Unit)
+        } catch (exc: Exception) {
+            Result.failure(exc)
+        }
+    }
 }

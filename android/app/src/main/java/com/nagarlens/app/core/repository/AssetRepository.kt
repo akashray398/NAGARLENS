@@ -23,4 +23,5 @@ interface AssetRepository {
         reviewerId: String,
         reason: String? = null
     ): Result<Asset>
+    suspend fun deleteAsset(assetId: String): Result<Unit>
 }
