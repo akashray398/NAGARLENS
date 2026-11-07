@@ -11,9 +11,12 @@ import com.nagarlens.app.core.model.ConditionSeverity
 import com.nagarlens.app.core.model.DefectCategory
 import com.nagarlens.app.core.model.DigitalTwinAsset
 import com.nagarlens.app.core.model.Evidence
+import com.nagarlens.app.core.model.EvidenceRequestRecord
 import com.nagarlens.app.core.model.InfrastructureObservation
 import com.nagarlens.app.core.model.Intervention
 import com.nagarlens.app.core.model.InterventionType
+import com.nagarlens.app.core.model.InvestigationCase
+import com.nagarlens.app.core.model.InvestigationStatus
 import com.nagarlens.app.core.model.ObservationType
 import com.nagarlens.app.core.model.OutcomeVerification
 import com.nagarlens.app.core.model.SpatialBoundary
@@ -22,6 +25,7 @@ import com.nagarlens.app.core.model.VerificationDecision
 import com.nagarlens.app.core.model.VerificationOutcome
 import com.nagarlens.app.core.repository.AssetRepository
 import com.nagarlens.app.core.repository.EvidenceRepository
+import com.nagarlens.app.core.repository.InvestigationRepository
 import com.nagarlens.app.core.repository.SpatialRepository
 import com.nagarlens.app.core.repository.TemporalRepository
 import com.nagarlens.app.feature.activity.ActivityViewModel
@@ -88,7 +92,8 @@ class FeatureViewModelsTest {
     @Test
     fun `activityViewModel initializes state observing evidence records`() {
         val fakeRepository = FakeEvidenceRepository()
-        val viewModel = ActivityViewModel(fakeRepository)
+        val fakeInvestigationRepository = FakeInvestigationRepository()
+        val viewModel = ActivityViewModel(fakeRepository, fakeInvestigationRepository)
         val state = viewModel.uiState.value
         assertNotNull(state.evidenceList)
     }
@@ -120,6 +125,14 @@ class FeatureViewModelsTest {
         override suspend fun getDigitalTwinAsset(assetId: String, userLat: Double?, userLon: Double?): DigitalTwinAsset? = null
         override fun observeSpatialBoundaries(): Flow<List<SpatialBoundary>> = flowOf(emptyList())
         override suspend fun getSpatialClusters(radiusMeters: Double): List<AssetCluster> = emptyList()
+    }
+
+    private class FakeInvestigationRepository : InvestigationRepository {
+        override fun observeInvestigations(): Flow<List<InvestigationCase>> = flowOf(emptyList())
+        override suspend fun getInvestigationById(id: String): InvestigationCase? = null
+        override suspend fun createInvestigation(title: String, assetId: String, assetCode: String, description: String?): Result<InvestigationCase> = Result.failure(Exception())
+        override suspend fun updateInvestigationStatus(id: String, targetStatus: InvestigationStatus, comment: String?): Result<InvestigationCase> = Result.failure(Exception())
+        override suspend fun requestEvidence(investigationId: String, assetId: String, evidenceType: String, instructions: String): Result<EvidenceRequestRecord> = Result.failure(Exception())
     }
 
     private class FakeTemporalRepository : TemporalRepository {

@@ -65,26 +65,26 @@ fun InvestigationScreen(
             NagarlensCard {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = invCase.caseNumber,
+                        text = invCase.id,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
                     Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-                    Text(text = "Investigation Status: ${invCase.status}", fontWeight = FontWeight.Bold)
-                    Text(text = "Incident Ref ID: ${invCase.incidentId}")
+                    Text(text = "Investigation Status: ${invCase.status.name}", fontWeight = FontWeight.Bold)
+                    Text(text = "Incident Ref ID: ${invCase.incidentId ?: "N/A"}")
                     Text(text = "Assigned Lead: ${invCase.assignedInvestigator}")
 
                     Spacer(modifier = Modifier.height(NagarlensSpacing.small))
                     Text(
-                        text = "Executive Summary:",
+                        text = "Investigation Title:",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
-                    Text(text = invCase.summary, style = MaterialTheme.typography.bodyMedium)
+                    Text(text = invCase.title, style = MaterialTheme.typography.bodyMedium)
 
-                    invCase.rootCauseAnalysis?.let { analysis ->
+                    invCase.description?.let { desc ->
                         Spacer(modifier = Modifier.height(NagarlensSpacing.small))
                         Text(
                             text = "Root Cause Evidence Analysis:",
@@ -92,7 +92,7 @@ fun InvestigationScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.secondary
                         )
-                        Text(text = analysis, style = MaterialTheme.typography.bodyMedium)
+                        Text(text = desc, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

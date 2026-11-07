@@ -8,6 +8,7 @@ import com.nagarlens.app.core.model.Incident
 import com.nagarlens.app.core.model.IncidentPriority
 import com.nagarlens.app.core.model.IncidentStatus
 import com.nagarlens.app.core.model.InvestigationCase
+import com.nagarlens.app.core.model.InvestigationStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -50,12 +51,14 @@ class IncidentRepositoryImpl @Inject constructor(
         val inc = getIncidentById(incidentId)
         return InvestigationCase(
             id = "INV-CASE-${incidentId.take(8)}",
+            title = "Root Cause Analysis: ${inc?.title ?: "Drainage Silt Failure"}",
+            description = "Visual evidence confirms major silt deposition obstructing channel cross-section after recent high-intensity precipitation.",
+            assetId = inc?.assetId ?: "AST-10001",
+            assetCode = inc?.assetCode ?: "NAG-CB-000001",
             incidentId = incidentId,
-            caseNumber = "CASE-2025-${(100..999).random()}",
-            summary = "Root cause investigation for ${inc?.title ?: "Drainage Silt Failure"}",
-            rootCauseAnalysis = "Visual evidence confirms major silt deposition obstructing channel cross-section after recent high-intensity precipitation.",
-            assignedInvestigator = "Eng. V. Kumar (BBMP Stormwater Cell)",
-            status = "ACTIVE_INVESTIGATION"
+            status = InvestigationStatus.INVESTIGATING,
+            priority = inc?.priority ?: IncidentPriority.HIGH,
+            assignedInvestigator = "Eng. V. Kumar (BBMP Stormwater Cell)"
         )
     }
 

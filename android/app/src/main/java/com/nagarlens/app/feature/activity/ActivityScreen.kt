@@ -1,6 +1,7 @@
 package com.nagarlens.app.feature.activity
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,8 @@ import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
 import com.nagarlens.app.core.designsystem.theme.SignalAmber
+import com.nagarlens.app.core.model.InvestigationCase
+import com.nagarlens.app.core.model.InvestigationStatus
 import com.nagarlens.app.core.model.SyncStatus
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -56,7 +59,7 @@ fun ActivityScreen(
         }
     }
 
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss 'UTC'", Locale.US).apply {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 
@@ -65,9 +68,130 @@ fun ActivityScreen(
             .fillMaxSize()
             .padding(NagarlensSpacing.medium)
     ) {
-        NagarlensSectionHeader(title = "Offline Evidence & Sync Status")
+        NagarlensSectionHeader(title = "Investigation Command & Evidence Sync")
 
-        // Filter Chips
+        // Active Investigation Command Center Section
+        if (uiState.investigationsList.isNotEmpty()) {
+            NagarlensCard(containerColor = Color(0xFF1E242B)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "INVESTIGATION COMMAND CENTER",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SignalAmber,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    uiState.investigationsList.forEach { invCase ->
+                        Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.selectInvestigation(invCase) }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = invCase.title,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Asset: ${invCase.assetCode} • Assigned: ${invCase.assignedInvestigator}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.LightGray
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(SafetyGreen, shape = MaterialTheme.shapes.extraSmall)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = invCase.status.name,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+        }
+
+        // Selected Investigation Detail Drawer
+        uiState.selectedInvestigation?.let { invCase ->
+            NagarlensCard {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Workspace: ${invCase.id}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        TextButton(onClick = { viewModel.selectInvestigation(null) }) {
+                            Text("CLOSE")
+                        }
+                    }
+                    Text(text = "Status: ${invCase.status.name} • Priority: ${invCase.priority.name}")
+                    invCase.description?.let { desc ->
+                        Text(text = desc, style = MaterialTheme.typography.bodySmall)
+                    }
+
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                    Text(
+                        text = "Investigation Timeline Events:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    invCase.timelineEvents.forEach { event ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "• ${event.title}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                            Text(text = dateFormat.format(Date(event.timestampUtc)), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)
+                    ) {
+                        NagarlensPrimaryButton(
+                            onClick = {
+                                viewModel.requestEvidence(invCase.id, invCase.assetId, "Take high-angle photo of grate invert channel.")
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("+ REQUEST EVIDENCE")
+                        }
+                        NagarlensPrimaryButton(
+                            onClick = {
+                                viewModel.advanceInvestigationStatus(invCase.id, InvestigationStatus.ACTION_PROPOSED)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("PROPOSE ACTION")
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+        }
+
+        // Filter Chips for Evidence
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
             modifier = Modifier.fillMaxWidth()
@@ -85,7 +209,7 @@ fun ActivityScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
+        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
 
         if (filteredRecords.isEmpty()) {
             Box(
@@ -184,7 +308,7 @@ fun ActivityScreen(
     uiState.actionMessage?.let { msg ->
         AlertDialog(
             onDismissRequest = { viewModel.clearActionMessage() },
-            title = { Text("Synchronization Status") },
+            title = { Text("Command Center Notice") },
             text = { Text(msg) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearActionMessage() }) {
