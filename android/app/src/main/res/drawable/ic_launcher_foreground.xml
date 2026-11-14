@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Radar Observation Rings -->
+    <path
+        android:pathData="M54,54m-32,0a32,32 0 1,0 64,0a32,32 0 1,0 -64,0"
+        android:strokeColor="#00D9FF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"/>
+    <path
+        android:pathData="M54,54m-22,0a22,22 0 1,0 44,0a22,22 0 1,0 -44,0"
+        android:strokeColor="#00D6B5"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"/>
+
+    <!-- Geometric Skyline Silhouette inside Pin -->
+    <path
+        android:pathData="M38,62 L38,48 L44,48 L44,42 L50,42 L50,34 L58,34 L58,45 L64,45 L64,52 L70,52 L70,62 Z"
+        android:fillColor="#168BFF"/>
+
+    <!-- Central Location Marker Pin & Lens Ring -->
+    <path
+        android:pathData="M54,28 C45.16,28 38,35.16 38,44 C38,55 54,74 54,74 C54,74 70,55 70,44 C70,35.16 62.84,28 54,28 Z"
+        android:strokeColor="#00D9FF"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"/>
+
+    <!-- Luminous Core Lens Pulse Dot -->
+    <path
+        android:pathData="M54,44m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
+        android:fillColor="#00D9FF"/>
+
+</vector>

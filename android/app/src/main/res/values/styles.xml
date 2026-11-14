@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.Nagarlens" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#061426</item>
+        <item name="android:navigationBarColor">#061426</item>
+    </style>
+
+    <!-- Native SplashScreen API Theme -->
+    <style name="Theme.Nagarlens.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#061426</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Nagarlens</item>
+    </style>
+</resources>
