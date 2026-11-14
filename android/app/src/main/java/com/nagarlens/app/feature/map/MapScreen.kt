@@ -1,5 +1,11 @@
 package com.nagarlens.app.feature.map
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,12 +26,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -39,16 +54,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
+import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
@@ -65,10 +87,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
-enum class MapDisplayMode {
-    CANVAS_MAP,
+// GIS Map Theme Colors
+private val MapDarkBackground = Color(0xFF0B1017)
+private val CyanAccent = Color(0xFF00F0FF)
+private val ElectricBlue = Color(0xFF00B0FF)
+private val HydraulicFlowBlue = Color(0xFF00E5FF)
+
+enum class MapLayerMode {
+    SATELLITE_GIS,
     SPATIAL_LIST
 }
 
@@ -78,7 +108,7 @@ fun MapScreen(
     viewModel: MapViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var displayMode by remember { mutableStateOf(MapDisplayMode.CANVAS_MAP) }
+    var layerMode by remember { mutableStateOf(MapLayerMode.SATELLITE_GIS) }
     var zoomScale by remember { mutableFloatStateOf(1.0f) }
 
     val filteredAssets = uiState.assets.filter { asset ->
@@ -102,6 +132,7 @@ fun MapScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MapDarkBackground)
             .padding(NagarlensSpacing.medium)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -115,24 +146,25 @@ fun MapScreen(
                 Text(
                     text = uiState.activeWard,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = CyanAccent,
+                    fontWeight = FontWeight.Bold
                 )
 
-                // Map View Mode Toggle Chips
+                // 2-Way Map Layer Selector Chips
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     FilterChip(
-                        selected = displayMode == MapDisplayMode.CANVAS_MAP,
-                        onClick = { displayMode = MapDisplayMode.CANVAS_MAP },
-                        label = { Text("MAP") },
+                        selected = layerMode == MapLayerMode.SATELLITE_GIS,
+                        onClick = { layerMode = MapLayerMode.SATELLITE_GIS },
+                        label = { Text("GIS MAP", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.secondary,
                             selectedLabelColor = Color.White
                         )
                     )
                     FilterChip(
-                        selected = displayMode == MapDisplayMode.SPATIAL_LIST,
-                        onClick = { displayMode = MapDisplayMode.SPATIAL_LIST },
-                        label = { Text("LIST") },
+                        selected = layerMode == MapLayerMode.SPATIAL_LIST,
+                        onClick = { layerMode = MapLayerMode.SPATIAL_LIST },
+                        label = { Text("LIST", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.secondary,
                             selectedLabelColor = Color.White
@@ -147,9 +179,10 @@ fun MapScreen(
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                label = { Text("Filter map by Code or Description") },
+                label = { Text("Search Map by Asset Code or Description") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = CyanAccent) }
             )
 
             Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
@@ -174,16 +207,16 @@ fun MapScreen(
 
             Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
 
-            // Living Interactive Map Canvas Container
+            // Living Interactive GIS Canvas Container
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(color = Color(0xFF151B22), shape = MaterialTheme.shapes.medium)
-                    .border(width = 2.dp, color = MaterialTheme.colorScheme.secondary, shape = MaterialTheme.shapes.medium)
+                    .background(color = MapDarkBackground, shape = RoundedCornerShape(12.dp))
+                    .border(width = 1.5.dp, color = Color(0xFF1E3A5F), shape = RoundedCornerShape(12.dp))
             ) {
-                if (displayMode == MapDisplayMode.CANVAS_MAP) {
-                    InteractiveMapCanvasView(
+                if (layerMode == MapLayerMode.SATELLITE_GIS) {
+                    HyperRealisticGisMapCanvas(
                         assets = filteredAssets,
                         selectedAsset = uiState.selectedAsset,
                         userLat = uiState.userLocation?.latitude ?: 12.9716,
@@ -192,52 +225,65 @@ fun MapScreen(
                         onAssetSelected = { viewModel.selectAsset(it) }
                     )
 
-                    // Zoom & GPS Controls Overlay
+                    // Zoom & GPS Map Controls Overlay
                     Column(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(NagarlensSpacing.small),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         FloatingActionButton(
-                            onClick = { zoomScale = (zoomScale * 1.25f).coerceAtMost(3.0f) },
-                            modifier = Modifier.size(36.dp),
-                            containerColor = Color(0xFF2A323D),
+                            onClick = { zoomScale = (zoomScale * 1.3f).coerceAtMost(4.0f) },
+                            modifier = Modifier.size(38.dp),
+                            containerColor = Color(0xFF1E2A3A),
                             contentColor = Color.White
                         ) {
-                            Text("+", fontWeight = FontWeight.Bold)
+                            Text("+", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         }
                         FloatingActionButton(
-                            onClick = { zoomScale = (zoomScale / 1.25f).coerceAtLeast(0.5f) },
-                            modifier = Modifier.size(36.dp),
-                            containerColor = Color(0xFF2A323D),
+                            onClick = { zoomScale = (zoomScale / 1.3f).coerceAtLeast(0.5f) },
+                            modifier = Modifier.size(38.dp),
+                            containerColor = Color(0xFF1E2A3A),
                             contentColor = Color.White
                         ) {
-                            Text("-", fontWeight = FontWeight.Bold)
+                            Text("-", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         }
                         FloatingActionButton(
                             onClick = {
                                 zoomScale = 1.0f
                                 viewModel.refreshUserLocation()
                             },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(38.dp),
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = Color.White
                         ) {
-                            Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                         }
                     }
 
-                    Text(
-                        text = "GIS CANVAS • ZOOM %.1fx • TAP PIN TO VIEW".format(zoomScale),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.LightGray,
+                    // Map Status HUD Footer
+                    Row(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(NagarlensSpacing.small)
-                            .background(Color.Black.copy(alpha = 0.6f), shape = MaterialTheme.shapes.extraSmall)
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                            .background(Color.Black.copy(alpha = 0.75f), shape = RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(SafetyGreen, shape = CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "HYDRAULIC FLOW ACTIVE • ZOOM %.1fx • %d ASSETS ON CANVAS".format(zoomScale, filteredAssets.size),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = CyanAccent,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 } else {
                     // Spatial List View Mode
                     Column(
@@ -251,9 +297,10 @@ fun MapScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "VIEWPORT: 12.960°-12.985°N, 77.580°-77.610°E",
+                                text = "CATCHMENT VIEWPORT: 12.960°-12.985°N, 77.580°-77.610°E",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.LightGray
+                                color = Color.LightGray,
+                                fontSize = 10.sp
                             )
                             Text(
                                 text = "${filteredAssets.size} Assets",
@@ -287,8 +334,8 @@ fun MapScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
-                                                color = if (uiState.selectedAsset?.id == asset.id) MaterialTheme.colorScheme.surfaceVariant else Color(0xFF2A323D),
-                                                shape = MaterialTheme.shapes.small
+                                                color = if (uiState.selectedAsset?.id == asset.id) MaterialTheme.colorScheme.surfaceVariant else Color(0xFF1E2A3A),
+                                                shape = RoundedCornerShape(8.dp)
                                             )
                                             .clickable { viewModel.selectAsset(asset) }
                                             .padding(NagarlensSpacing.small),
@@ -360,7 +407,7 @@ fun MapScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             TextButton(onClick = { viewModel.selectAsset(null) }) {
-                                Text("CLOSE")
+                                Text("CLOSE", color = Color.Gray)
                             }
                         }
                         Text(text = "Category: ${asset.assetCategory.name} • Status: ${asset.verificationStatus.name}")
@@ -382,7 +429,7 @@ fun MapScreen(
                             text = "Chronological Event Timeline:",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
+                            color = CyanAccent
                         )
 
                         uiState.selectedAssetTimeline?.let { timeline ->
@@ -537,7 +584,7 @@ fun MapScreen(
 }
 
 @Composable
-private fun InteractiveMapCanvasView(
+private fun HyperRealisticGisMapCanvas(
     assets: List<Asset>,
     selectedAsset: Asset?,
     userLat: Double,
@@ -545,16 +592,27 @@ private fun InteractiveMapCanvasView(
     zoomScale: Float,
     onAssetSelected: (Asset) -> Unit
 ) {
-    // Spatial Map Bounds for Center (Bangalore Ward 12 baseline)
     val centerLat = userLat
     val centerLon = userLon
-    val latSpan = 0.020 / zoomScale
-    val lonSpan = 0.020 / zoomScale
+    // Use wider 0.030 degree span so all registered assets in Ward 12 catchment are always visible on canvas
+    val latSpan = 0.030 / zoomScale
+    val lonSpan = 0.030 / zoomScale
 
     val minLat = centerLat - (latSpan / 2)
     val maxLat = centerLat + (latSpan / 2)
     val minLon = centerLon - (lonSpan / 2)
     val maxLon = centerLon + (lonSpan / 2)
+
+    val infiniteTransition = rememberInfiniteTransition(label = "HydraulicFlow")
+    val flowOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "FlowOffset"
+    )
 
     var pinOffsets by remember { mutableStateOf<List<Pair<Asset, Offset>>>(emptyList()) }
 
@@ -563,11 +621,10 @@ private fun InteractiveMapCanvasView(
             .fillMaxSize()
             .pointerInput(assets, zoomScale, minLat, maxLat, minLon, maxLon) {
                 detectTapGestures { tapOffset ->
-                    // Find tapped pin within 30px touch radius
                     val tappedPair = pinOffsets.find { pair ->
                         val dx = pair.second.x - tapOffset.x
                         val dy = pair.second.y - tapOffset.y
-                        sqrt(dx * dx + dy * dy) <= 40.0f
+                        sqrt(dx * dx + dy * dy) <= 45.0f
                     }
                     tappedPair?.let { onAssetSelected(it.first) }
                 }
@@ -576,42 +633,109 @@ private fun InteractiveMapCanvasView(
         val width = size.width
         val height = size.height
 
-        // 1. Draw GIS Latitude/Longitude Grid Lines
-        val gridLinesCount = 5
-        val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+        // 1. Draw City Block Parcels Background
+        drawRoundRect(
+            color = Color(0xFF141C28),
+            topLeft = Offset(width * 0.05f, height * 0.08f),
+            size = Size(width * 0.40f, height * 0.35f),
+            cornerRadius = CornerRadius(12f, 12f)
+        )
+        drawRoundRect(
+            color = Color(0xFF141C28),
+            topLeft = Offset(width * 0.55f, height * 0.08f),
+            size = Size(width * 0.40f, height * 0.35f),
+            cornerRadius = CornerRadius(12f, 12f)
+        )
+        drawRoundRect(
+            color = Color(0xFF141C28),
+            topLeft = Offset(width * 0.05f, height * 0.52f),
+            size = Size(width * 0.40f, height * 0.40f),
+            cornerRadius = CornerRadius(12f, 12f)
+        )
+        drawRoundRect(
+            color = Color(0xFF141C28),
+            topLeft = Offset(width * 0.55f, height * 0.52f),
+            size = Size(width * 0.40f, height * 0.40f),
+            cornerRadius = CornerRadius(12f, 12f)
+        )
 
-        for (i in 0..gridLinesCount) {
-            val x = width * (i / gridLinesCount.toFloat())
-            drawLine(
-                color = Color(0xFF2A323D),
-                start = Offset(x, 0f),
-                end = Offset(x, height),
-                strokeWidth = 1f,
-                pathEffect = dashEffect
-            )
+        // 2. Draw Major Road Network Corridors
+        val roadDash = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+        // Horizontal Main Avenue
+        drawLine(
+            color = Color(0xFF263445),
+            start = Offset(0f, height * 0.47f),
+            end = Offset(width, height * 0.47f),
+            strokeWidth = 24f
+        )
+        drawLine(
+            color = Color(0xFF00F0FF).copy(alpha = 0.3f),
+            start = Offset(0f, height * 0.47f),
+            end = Offset(width, height * 0.47f),
+            strokeWidth = 2f,
+            pathEffect = roadDash
+        )
 
-            val y = height * (i / gridLinesCount.toFloat())
+        // Vertical Main Boulevard
+        drawLine(
+            color = Color(0xFF263445),
+            start = Offset(width * 0.48f, 0f),
+            end = Offset(width * 0.48f, height),
+            strokeWidth = 24f
+        )
+        drawLine(
+            color = Color(0xFF00F0FF).copy(alpha = 0.3f),
+            start = Offset(width * 0.48f, 0f),
+            end = Offset(width * 0.48f, height),
+            strokeWidth = 2f,
+            pathEffect = roadDash
+        )
+
+        // 3. Draw GIS Ward Boundary Line
+        drawRoundRect(
+            color = CyanAccent.copy(alpha = 0.5f),
+            topLeft = Offset(width * 0.02f, height * 0.02f),
+            size = Size(width * 0.96f, height * 0.96f),
+            cornerRadius = CornerRadius(16f, 16f),
+            style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f))
+        )
+
+        // 4. Calculate Pin Offsets for Asset Coordinates
+        val newPinOffsets = mutableListOf<Pair<Asset, Offset>>()
+
+        assets.forEach { asset ->
+            val x = ((asset.longitude - minLon) / (maxLon - minLon) * width).toFloat()
+            val y = (height - ((asset.latitude - minLat) / (maxLat - minLat) * height)).toFloat()
+            if (x in 0f..width && y in 0f..height) {
+                newPinOffsets.add(asset to Offset(x, y))
+            }
+        }
+
+        // 5. Draw Hydraulic Flow Network Lines Connecting Nearby Drainage Assets
+        for (i in 0 until newPinOffsets.size - 1) {
+            val p1 = newPinOffsets[i].second
+            val p2 = newPinOffsets[i + 1].second
+
+            val flowDash = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), flowOffset)
             drawLine(
-                color = Color(0xFF2A323D),
-                start = Offset(0f, y),
-                end = Offset(width, y),
-                strokeWidth = 1f,
-                pathEffect = dashEffect
+                color = HydraulicFlowBlue.copy(alpha = 0.7f),
+                start = p1,
+                end = p2,
+                strokeWidth = 3f,
+                pathEffect = flowDash
             )
         }
 
-        // 2. Draw User GPS Location Dot & Accuracy Circle
+        // 6. Draw User GPS Location Point & Accuracy Halo
         val userX = ((userLon - minLon) / (maxLon - minLon) * width).toFloat()
         val userY = (height - ((userLat - minLat) / (maxLat - minLat) * height)).toFloat()
 
         if (userX in 0f..width && userY in 0f..height) {
-            // Accuracy radius halo
             drawCircle(
                 color = Color(0x3300B0FF),
                 radius = 35.0f * zoomScale,
                 center = Offset(userX, userY)
             )
-            // Core GPS dot
             drawCircle(
                 color = Color(0xFF00B0FF),
                 radius = 10.0f,
@@ -624,45 +748,40 @@ private fun InteractiveMapCanvasView(
             )
         }
 
-        // 3. Map Asset Coordinates to Canvas Offset Points
-        val newPinOffsets = mutableListOf<Pair<Asset, Offset>>()
+        // 7. Draw Asset Pins & Selection Rings
+        newPinOffsets.forEach { (asset, offset) ->
+            val isSelected = selectedAsset?.id == asset.id
+            val pinColor = when (asset.verificationStatus) {
+                AssetVerificationStatus.VERIFIED -> SafetyGreen
+                AssetVerificationStatus.REJECTED -> AlertRed
+                else -> SignalAmber
+            }
 
-        assets.forEach { asset ->
-            val x = ((asset.longitude - minLon) / (maxLon - minLon) * width).toFloat()
-            val y = (height - ((asset.latitude - minLat) / (maxLat - minLat) * height)).toFloat()
-
-            if (x in 0f..width && y in 0f..height) {
-                val offset = Offset(x, y)
-                newPinOffsets.add(asset to offset)
-
-                val isSelected = selectedAsset?.id == asset.id
-                val pinColor = when (asset.verificationStatus) {
-                    AssetVerificationStatus.VERIFIED -> SafetyGreen
-                    AssetVerificationStatus.REJECTED -> AlertRed
-                    else -> SignalAmber
-                }
-
-                // Draw outer selection glow if selected
-                if (isSelected) {
-                    drawCircle(
-                        color = Color.White,
-                        radius = 20.0f,
-                        center = offset
-                    )
-                }
-
-                // Draw Asset Pin Circle
+            if (isSelected) {
                 drawCircle(
-                    color = pinColor,
-                    radius = if (isSelected) 14.0f else 10.0f,
+                    color = Color.White,
+                    radius = 22.0f,
                     center = offset
                 )
                 drawCircle(
-                    color = Color.Black,
-                    radius = 4.0f,
+                    color = CyanAccent.copy(alpha = 0.5f),
+                    radius = 32.0f,
                     center = offset
                 )
             }
+
+            // Outer Pin Ring
+            drawCircle(
+                color = pinColor,
+                radius = if (isSelected) 14.0f else 10.0f,
+                center = offset
+            )
+            // Core Dot
+            drawCircle(
+                color = Color.Black,
+                radius = 4.0f,
+                center = offset
+            )
         }
 
         pinOffsets = newPinOffsets

@@ -1,6 +1,8 @@
 package com.nagarlens.app.feature.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,15 +14,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
@@ -41,6 +53,14 @@ import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
 import com.nagarlens.app.core.designsystem.theme.SignalAmber
 
+// Living City Dark Theme Colors
+private val DarkCityBackground = Color(0xFF0B0F17)
+private val HolographicCardBackground = Color(0xFF121824)
+private val CyanAccent = Color(0xFF00F0FF)
+private val ElectricBlue = Color(0xFF00B0FF)
+private val CyanGlowBorder = Color(0xFF1E3A5F)
+private val DarkCardBorder = Color(0xFF1A2638)
+
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
@@ -50,13 +70,59 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(DarkCityBackground)
             .verticalScroll(rememberScrollState())
-            .padding(NagarlensSpacing.medium)
+            .padding(horizontal = NagarlensSpacing.medium, vertical = NagarlensSpacing.small),
+        verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)
     ) {
-        NagarlensSectionHeader(title = "Auditor Identity & Security Governance")
+        NagarlensSectionHeader(title = "Settings & Persona Governance")
 
-        // Auditor Executive Identity Card
-        NagarlensCard(containerColor = Color(0xFF1E242B)) {
+        // Multi-Role Persona Switcher
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "SELECT ACTIVE PERSONA PROFILE:",
+                style = MaterialTheme.typography.labelSmall,
+                color = CyanAccent,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(UserRolePersona.entries) { persona ->
+                    val isSelected = uiState.activeRolePersona == persona
+                    val labelText = when (persona) {
+                        UserRolePersona.CITIZEN_USER -> "CITIZEN USER"
+                        UserRolePersona.FIELD_INSPECTOR -> "FIELD INSPECTOR"
+                        UserRolePersona.REVIEWER_ADMIN -> "REVIEWER ADMIN"
+                        UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYS ADMIN"
+                    }
+
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.switchRolePersona(persona) },
+                        label = { Text(labelText, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                            selectedLabelColor = Color.White,
+                            containerColor = HolographicCardBackground,
+                            labelColor = Color.LightGray
+                        )
+                    )
+                }
+            }
+        }
+
+        // Executive Identity Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
+                .border(1.dp, CyanGlowBorder, shape = RoundedCornerShape(12.dp))
+                .padding(NagarlensSpacing.small)
+        ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -69,29 +135,30 @@ fun ProfileScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(44.dp)
                                 .background(color = MaterialTheme.colorScheme.secondary, shape = CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Person,
-                                contentDescription = "Auditor Avatar",
+                                contentDescription = "Avatar",
                                 tint = Color.White,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(26.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(NagarlensSpacing.small))
                         Column {
                             Text(
                                 text = uiState.inspectorName,
-                                style = MaterialTheme.typography.titleLarge,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
                                 text = uiState.officialDesignation,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = CyanAccent,
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -99,91 +166,105 @@ fun ProfileScreen(
                     Box(
                         modifier = Modifier
                             .background(SafetyGreen, shape = MaterialTheme.shapes.extraSmall)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "VERIFIED",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
                 Text(
-                    text = "Badge Token: ${uiState.badgeTokenId}",
+                    text = "Badge Token: ${uiState.badgeTokenId} • ${uiState.organizationName}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.LightGray
-                )
-                Text(
-                    text = "Organization: ${uiState.organizationName}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.LightGray
+                    color = Color.LightGray,
+                    fontSize = 10.sp
                 )
                 Text(
                     text = "Jurisdiction: ${uiState.assignedWard}",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 11.sp
                 )
                 Text(
                     text = "RBAC Security Clearance: ${uiState.securityRole}",
                     style = MaterialTheme.typography.labelSmall,
                     color = SignalAmber,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+        // Persona-Specific Feature Capabilities Panel
+        PersonaFeaturesPanel(
+            persona = uiState.activeRolePersona,
+            apiEndpointUrl = uiState.apiEndpointUrl,
+            aiModelSpec = uiState.selectedAiModel,
+            onExportAuditLog = { viewModel.exportAuditLog() }
+        )
 
-        // Real-time System & Security Telemetry Panel
-        NagarlensCard {
+        // System Security & Telemetry Panel
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
+                .border(1.dp, DarkCardBorder, shape = RoundedCornerShape(12.dp))
+                .padding(NagarlensSpacing.small)
+        ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Active Security & Privacy Engine Telemetry",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Active Security & Telemetry Engine",
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
                 )
 
-                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
                 TelemetryRow(label = "SHA-256 Media Digest Engine", status = "ACTIVE", color = SafetyGreen)
-                TelemetryRow(label = "AI PII Privacy Blurring Filter", status = "AUTO-REDACTING", color = SafetyGreen)
+                TelemetryRow(label = "AI PII Privacy Blurring Filter", status = if (uiState.isPiiPrivacyBlurActive) "AUTO-REDACTING" else "DISABLED", color = if (uiState.isPiiPrivacyBlurActive) SafetyGreen else SignalAmber)
                 TelemetryRow(label = "Fused GNSS Precision Lock", status = "±3.2m (GPS+Galileo)", color = SafetyGreen)
                 TelemetryRow(label = "Room SQLite Database v5", status = "ENCRYPTED & ISOLATED", color = SafetyGreen)
                 TelemetryRow(label = "Cloud Transport Security", status = "TLS 1.3 (api.nagarlens.gov)", color = SafetyGreen)
             }
         }
 
-        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-
-        // Field Storage & Synchronisation Operations
-        NagarlensCard {
+        // Offline Field Storage & Cache Operations
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
+                .border(1.dp, DarkCardBorder, shape = RoundedCornerShape(12.dp))
+                .padding(NagarlensSpacing.small)
+        ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "Offline Field Storage & Cache Operations",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
                 )
 
-                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Pending Upload Queue:", style = MaterialTheme.typography.bodyMedium)
-                    Text(text = "${uiState.queuedObservationCount} Records", fontWeight = FontWeight.Bold, color = SignalAmber)
-                }
                 Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "Spatial Vector Cache:", style = MaterialTheme.typography.bodyMedium)
-                    Text(text = "%.1f MB".format(uiState.encryptedCacheSizeMb), fontWeight = FontWeight.Bold)
+                    Text(text = "Pending Upload Queue:", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
+                    Text(text = "${uiState.queuedObservationCount} Records", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = SignalAmber)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Spatial Vector Cache:", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
+                    Text(text = "%.1f MB".format(uiState.encryptedCacheSizeMb), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(NagarlensSpacing.small))
@@ -208,20 +289,64 @@ fun ProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+        // Advanced System Preferences & Toggles
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
+                .border(1.dp, DarkCardBorder, shape = RoundedCornerShape(12.dp))
+                .padding(NagarlensSpacing.small)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "System & Network Preferences",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
 
-        // Security Session Governance & Logout
-        NagarlensCard {
+                Spacer(modifier = Modifier.height(4.dp))
+                TogglePreferenceRow(
+                    title = "Low Data Compression Mode",
+                    subtitle = "Compress field imagery before 3G/4G network sync",
+                    isChecked = uiState.isLowDataCompressionEnabled,
+                    onCheckedChange = { viewModel.toggleLowDataCompression(it) }
+                )
+                TogglePreferenceRow(
+                    title = "Geofenced Early Warning Alerts",
+                    subtitle = "Receive push warnings for high-risk drainage catchments",
+                    isChecked = uiState.isEarlyWarningPushEnabled,
+                    onCheckedChange = { viewModel.toggleEarlyWarningPush(it) }
+                )
+                TogglePreferenceRow(
+                    title = "AI Privacy PII Auto-Redaction",
+                    subtitle = "Automatically blur bystander faces & license plates",
+                    isChecked = uiState.isPiiPrivacyBlurActive,
+                    onCheckedChange = { viewModel.togglePiiPrivacyBlur(it) }
+                )
+            }
+        }
+
+        // Security Session Governance & Sign Out
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
+                .border(1.dp, AlertRed.copy(alpha = 0.5f), shape = RoundedCornerShape(12.dp))
+                .padding(NagarlensSpacing.small)
+        ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "Security Session Governance",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = AlertRed
                 )
                 Text(
                     text = "Session active with short-lived JWT token rotation. Signing out zeros tokens from memory.",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray,
+                    fontSize = 10.sp
                 )
 
                 Spacer(modifier = Modifier.height(NagarlensSpacing.small))
@@ -234,9 +359,7 @@ fun ProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(NagarlensSpacing.medium))
-
-        // Version & System Specifications
+        // Version & Build Provenance
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -250,31 +373,107 @@ fun ProfileScreen(
             Text(
                 text = "AI Vision: MobileNetV3 + RT-DETR-Nano (v1.0.0)",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = Color.Gray,
+                fontSize = 10.sp
             )
             Text(
                 text = "Spatial CRS: WGS84 (EPSG:4326) • PostGIS 3.4 Engine",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = Color.Gray,
+                fontSize = 10.sp
             )
         }
 
-        // Bottom Inset Padding so content is never obstructed by bottom navigation bar
         Spacer(modifier = Modifier.height(88.dp))
     }
 
-    // Action Notice Alert Dialog
+    // Action Notice Dialog
     uiState.actionNotice?.let { notice ->
         AlertDialog(
             onDismissRequest = { viewModel.clearActionNotice() },
-            title = { Text("Security & Operations Notice", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
-            text = { Text(notice) },
+            containerColor = HolographicCardBackground,
+            title = { Text("System Operations Notice", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White) },
+            text = { Text(notice, color = Color.LightGray) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearActionNotice() }) {
-                    Text("OK")
+                    Text("OK", color = CyanAccent, fontWeight = FontWeight.Bold)
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun PersonaFeaturesPanel(
+    persona: UserRolePersona,
+    apiEndpointUrl: String,
+    aiModelSpec: String,
+    onExportAuditLog: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
+            .border(1.dp, CyanGlowBorder, shape = RoundedCornerShape(12.dp))
+            .padding(NagarlensSpacing.small)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = when (persona) {
+                    UserRolePersona.CITIZEN_USER -> "CITIZEN USER CAPABILITIES"
+                    UserRolePersona.FIELD_INSPECTOR -> "FIELD AUDITOR CAPABILITIES"
+                    UserRolePersona.REVIEWER_ADMIN -> "REVIEWER & MUNICIPAL ADMIN CAPABILITIES"
+                    UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYSTEM ADMINISTRATOR COMMAND TOOLS"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = CyanAccent
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            when (persona) {
+                UserRolePersona.CITIZEN_USER -> {
+                    FeatureCheckBullet("Report Local Drainage Defect & Waterlogging")
+                    FeatureCheckBullet("View Geofenced Community Early Warning Alerts")
+                    FeatureCheckBullet("Track Submitted Observation Verification Status")
+                }
+                UserRolePersona.FIELD_INSPECTOR -> {
+                    FeatureCheckBullet("CameraX Reality Capture & SHA-256 Digest Engine")
+                    FeatureCheckBullet("Offline Room v5 Database Ingestion & Retry Queue")
+                    FeatureCheckBullet("Fused Location Provider Precision Telemetry Lock")
+                }
+                UserRolePersona.REVIEWER_ADMIN -> {
+                    FeatureCheckBullet("Submit Asset Verification Decisions (APPROVED / REJECTED)")
+                    FeatureCheckBullet("14-State Investigation Command & Work Order Dispatch")
+                    FeatureCheckBullet("Human-in-the-Loop Predictive Risk Score Overrides")
+                }
+                UserRolePersona.SYSTEM_ADMINISTRATOR -> {
+                    FeatureCheckBullet("API Gateway URL: $apiEndpointUrl")
+                    FeatureCheckBullet("Active Vision AI Model: $aiModelSpec")
+                    FeatureCheckBullet("PostGIS Spatial Schema v5 & Alembic Async Migrations")
+                    Spacer(modifier = Modifier.height(4.dp))
+                    NagarlensSecondaryButton(
+                        onClick = onExportAuditLog,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("EXPORT SHA-256 AUDIT CHAIN LOG", color = CyanAccent, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeatureCheckBullet(text: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(12.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text = text, style = MaterialTheme.typography.bodySmall, color = Color.White, fontSize = 11.sp)
     }
 }
 
@@ -283,7 +482,7 @@ private fun TelemetryRow(label: String, status: String, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -295,11 +494,42 @@ private fun TelemetryRow(label: String, status: String, color: Color) {
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text = label, style = MaterialTheme.typography.bodySmall)
+            Text(text = label, style = MaterialTheme.typography.bodySmall, color = Color.LightGray, fontSize = 11.sp)
         }
-        Text(text = status, style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.Bold)
+        Text(text = status, style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+    }
+}
+
+@Composable
+private fun TogglePreferenceRow(
+    title: String,
+    subtitle: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontSize = 10.sp)
+        }
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = CyanAccent,
+                uncheckedThumbColor = Color.Gray,
+                uncheckedTrackColor = Color(0xFF1E2E44)
+            )
+        )
     }
 }

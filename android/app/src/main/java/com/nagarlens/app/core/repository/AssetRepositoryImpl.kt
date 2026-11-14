@@ -23,7 +23,13 @@ class AssetRepositoryImpl @Inject constructor(
 
     override fun getAllAssets(): Flow<List<Asset>> {
         return assetDao.observeAllAssets().map { list ->
-            list.map { it.toDomainModel() }
+            if (list.isEmpty()) {
+                val seed = getSeedAssets()
+                seed.forEach { assetDao.insertAsset(it.toEntity()) }
+                seed
+            } else {
+                list.map { it.toDomainModel() }
+            }
         }
     }
 
@@ -120,5 +126,59 @@ class AssetRepositoryImpl @Inject constructor(
         } catch (exc: Exception) {
             Result.failure(exc)
         }
+    }
+
+    private fun getSeedAssets(): List<Asset> {
+        val now = System.currentTimeMillis()
+        return listOf(
+            Asset(
+                id = "AST-10001",
+                assetCode = "NAG-CB-000104",
+                assetCategory = AssetCategory.CATCH_BASIN,
+                lifecycleStatus = AssetLifecycleStatus.ACTIVE,
+                verificationStatus = AssetVerificationStatus.UNVERIFIED,
+                latitude = 12.9716,
+                longitude = 77.5946,
+                description = "Catch Basin Invert - Ward 12 Main Drain",
+                createdTimestampUtc = now,
+                updatedTimestampUtc = now
+            ),
+            Asset(
+                id = "AST-10002",
+                assetCode = "NAG-SWD-000201",
+                assetCategory = AssetCategory.STORM_WATER_DRAIN,
+                lifecycleStatus = AssetLifecycleStatus.ACTIVE,
+                verificationStatus = AssetVerificationStatus.VERIFIED,
+                latitude = 12.9740,
+                longitude = 77.5980,
+                description = "Primary Arterial Stormwater Conduit",
+                createdTimestampUtc = now - 3600000,
+                updatedTimestampUtc = now - 3600000
+            ),
+            Asset(
+                id = "AST-10003",
+                assetCode = "NAG-MH-000052",
+                assetCategory = AssetCategory.MANHOLE,
+                lifecycleStatus = AssetLifecycleStatus.ACTIVE,
+                verificationStatus = AssetVerificationStatus.VERIFIED,
+                latitude = 12.9680,
+                longitude = 77.5910,
+                description = "Sewer Interceptor Junction Manhole",
+                createdTimestampUtc = now - 7200000,
+                updatedTimestampUtc = now - 7200000
+            ),
+            Asset(
+                id = "AST-10004",
+                assetCode = "NAG-CVT-000012",
+                assetCategory = AssetCategory.CULVERT,
+                lifecycleStatus = AssetLifecycleStatus.ACTIVE,
+                verificationStatus = AssetVerificationStatus.CORRECTION_REQUIRED,
+                latitude = 12.9700,
+                longitude = 77.5960,
+                description = "Box Culvert Outfall Channel",
+                createdTimestampUtc = now - 10800000,
+                updatedTimestampUtc = now - 10800000
+            )
+        )
     }
 }
