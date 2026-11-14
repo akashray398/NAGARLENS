@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -30,6 +32,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -37,10 +40,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -66,6 +74,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var isRoleLoginDialogOpen by remember { mutableStateOf(false) }
+    var isRegisterAccountDialogOpen by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -77,16 +87,30 @@ fun ProfileScreen(
     ) {
         NagarlensSectionHeader(title = "Settings & Persona Governance")
 
-        // Multi-Role Persona Switcher
+        // Multi-Role Persona Switcher Bar
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "SELECT ACTIVE PERSONA PROFILE:",
-                style = MaterialTheme.typography.labelSmall,
-                color = CyanAccent,
-                fontWeight = FontWeight.Bold,
-                fontSize = 10.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ACTIVE PERSONA ACCOUNT:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CyanAccent,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { isRoleLoginDialogOpen = true }) {
+                        Text("LOGIN AS ROLE", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = { isRegisterAccountDialogOpen = true }) {
+                        Text("+ NEW ACCOUNT", color = SafetyGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(2.dp))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -97,7 +121,7 @@ fun ProfileScreen(
                         UserRolePersona.CITIZEN_USER -> "CITIZEN USER"
                         UserRolePersona.FIELD_INSPECTOR -> "FIELD INSPECTOR"
                         UserRolePersona.REVIEWER_ADMIN -> "REVIEWER ADMIN"
-                        UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYS ADMIN"
+                        UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYS ADMIN (YOU)"
                     }
 
                     FilterChip(
@@ -180,7 +204,7 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
                 Text(
-                    text = "Badge Token: ${uiState.badgeTokenId} • ${uiState.organizationName}",
+                    text = "Email: ${uiState.userEmail} • Token: ${uiState.badgeTokenId}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.LightGray,
                     fontSize = 10.sp
@@ -209,6 +233,87 @@ fun ProfileScreen(
             aiModelSpec = uiState.selectedAiModel,
             onExportAuditLog = { viewModel.exportAuditLog() }
         )
+
+        // Real-Time User Activity Journey Inspector (For You as System Administrator)
+        if (uiState.activeRolePersona == UserRolePersona.SYSTEM_ADMINISTRATOR) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFF162232), Color(0xFF0F1824))
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .border(1.5.dp, CyanAccent, shape = RoundedCornerShape(12.dp))
+                    .padding(NagarlensSpacing.small)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "REAL-TIME USER JOURNEY INSPECTOR (ADMIN)",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = CyanAccent
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(SafetyGreen, shape = RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text("LIVE STREAM", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Inspect real-time field journeys, evidence capture events, and work order dispatches in the network:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.LightGray,
+                        fontSize = 10.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(130.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(uiState.liveJourneysStream) { journey ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF0B121C), shape = RoundedCornerShape(6.dp))
+                                    .padding(6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = journey.actorName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .background(Color(0xFF1E2F45), shape = RoundedCornerShape(4.dp))
+                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                        ) {
+                                            Text(text = journey.roleBadge, style = MaterialTheme.typography.labelSmall, color = CyanAccent, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                    Text(text = journey.actionDescription, style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontSize = 10.sp)
+                                }
+                                Text(text = journey.timestampText, style = MaterialTheme.typography.labelSmall, color = ElectricBlue, fontSize = 9.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // System Security & Telemetry Panel
         Box(
@@ -387,6 +492,156 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(88.dp))
     }
 
+    // 1-Tap Quick Role Login Dialog
+    if (isRoleLoginDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { isRoleLoginDialogOpen = false },
+            containerColor = HolographicCardBackground,
+            title = {
+                Text(
+                    text = "Role Authenticated Login",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
+                    Text(
+                        text = "Select a role persona to log in and unlock permission capabilities:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
+                    )
+
+                    RoleSelectCard(
+                        title = "👑 System Administrator (YOU)",
+                        description = "Full RBAC control, real-time user journey inspection, PostGIS DB migrations, export SHA-256 audit logs.",
+                        color = CyanAccent,
+                        onClick = {
+                            viewModel.loginRealTimeUser("admin", "admin_pass", UserRolePersona.SYSTEM_ADMINISTRATOR)
+                            isRoleLoginDialogOpen = false
+                        }
+                    )
+
+                    RoleSelectCard(
+                        title = "🛡️ Municipal Reviewer",
+                        description = "Asset verification (APPROVE/REJECT), incident dispatch, risk score overrides.",
+                        color = SignalAmber,
+                        onClick = {
+                            viewModel.loginRealTimeUser("reviewer", "reviewer_pass", UserRolePersona.REVIEWER_ADMIN)
+                            isRoleLoginDialogOpen = false
+                        }
+                    )
+
+                    RoleSelectCard(
+                        title = "👷 Field Auditor / Inspector",
+                        description = "CameraX reality capture, SHA-256 digests, offline Room queue, GNSS locking.",
+                        color = SafetyGreen,
+                        onClick = {
+                            viewModel.loginRealTimeUser("auditor_central", "inspector_pass", UserRolePersona.FIELD_INSPECTOR)
+                            isRoleLoginDialogOpen = false
+                        }
+                    )
+
+                    RoleSelectCard(
+                        title = "👤 Citizen User",
+                        description = "Report local waterlogging defects, track status, view geofenced alerts.",
+                        color = Color.LightGray,
+                        onClick = {
+                            viewModel.loginRealTimeUser("citizen", "citizen_pass", UserRolePersona.CITIZEN_USER)
+                            isRoleLoginDialogOpen = false
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isRoleLoginDialogOpen = false }) {
+                    Text("CLOSE", color = Color.Gray)
+                }
+            }
+        )
+    }
+
+    // Register New Account Dialog
+    if (isRegisterAccountDialogOpen) {
+        var newUsername by remember { mutableStateOf("") }
+        var newEmail by remember { mutableStateOf("") }
+        var newPassword by remember { mutableStateOf("") }
+        var newWard by remember { mutableStateOf("Ward 12 — Bangalore Central") }
+        var selectedRolePersona by remember { mutableStateOf(UserRolePersona.FIELD_INSPECTOR) }
+
+        AlertDialog(
+            onDismissRequest = { isRegisterAccountDialogOpen = false },
+            containerColor = HolographicCardBackground,
+            title = {
+                Text(
+                    text = "Register Permanent User Account",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.extraSmall)) {
+                    Text("Enter registration details (info saves permanently):", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
+
+                    OutlinedTextField(
+                        value = newUsername,
+                        onValueChange = { newUsername = it },
+                        label = { Text("Username / Badge ID") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = newEmail,
+                        onValueChange = { newEmail = it },
+                        label = { Text("Email Address") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = newWard,
+                        onValueChange = { newWard = it },
+                        label = { Text("Assigned Ward / City") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                NagarlensPrimaryButton(
+                    onClick = {
+                        if (newUsername.isNotBlank() && newEmail.isNotBlank()) {
+                            viewModel.registerNewRealTimeAccount(
+                                username = newUsername,
+                                email = newEmail,
+                                password = newPassword.ifBlank { "password" },
+                                ward = newWard,
+                                persona = selectedRolePersona
+                            )
+                            isRegisterAccountDialogOpen = false
+                        }
+                    }
+                ) {
+                    Text("REGISTER & SAVE ACCOUNT")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isRegisterAccountDialogOpen = false }) {
+                    Text("CANCEL", color = Color.Gray)
+                }
+            }
+        )
+    }
+
     // Action Notice Dialog
     uiState.actionNotice?.let { notice ->
         AlertDialog(
@@ -400,6 +655,29 @@ fun ProfileScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun RoleSelectCard(
+    title: String,
+    description: String,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1E2A3A), shape = RoundedCornerShape(8.dp))
+            .border(1.dp, color.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(NagarlensSpacing.small)
+    ) {
+        Column {
+            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = color, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = description, style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontSize = 10.sp)
+        }
     }
 }
 
@@ -423,7 +701,7 @@ private fun PersonaFeaturesPanel(
                     UserRolePersona.CITIZEN_USER -> "CITIZEN USER CAPABILITIES"
                     UserRolePersona.FIELD_INSPECTOR -> "FIELD AUDITOR CAPABILITIES"
                     UserRolePersona.REVIEWER_ADMIN -> "REVIEWER & MUNICIPAL ADMIN CAPABILITIES"
-                    UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYSTEM ADMINISTRATOR COMMAND TOOLS"
+                    UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYSTEM ADMINISTRATOR COMMAND TOOLS (YOU)"
                 },
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,

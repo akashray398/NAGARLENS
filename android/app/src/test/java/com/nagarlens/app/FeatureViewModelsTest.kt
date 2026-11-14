@@ -7,6 +7,7 @@ import com.nagarlens.app.core.location.LocationProvider
 import com.nagarlens.app.core.model.Asset
 import com.nagarlens.app.core.model.AssetCategory
 import com.nagarlens.app.core.model.AssetTimeline
+import com.nagarlens.app.core.model.AuthState
 import com.nagarlens.app.core.model.ConditionSeverity
 import com.nagarlens.app.core.model.DefectCategory
 import com.nagarlens.app.core.model.DigitalTwinAsset
@@ -21,9 +22,12 @@ import com.nagarlens.app.core.model.ObservationType
 import com.nagarlens.app.core.model.OutcomeVerification
 import com.nagarlens.app.core.model.SpatialBoundary
 import com.nagarlens.app.core.model.SyncStatus
+import com.nagarlens.app.core.model.UserRole
+import com.nagarlens.app.core.model.UserSession
 import com.nagarlens.app.core.model.VerificationDecision
 import com.nagarlens.app.core.model.VerificationOutcome
 import com.nagarlens.app.core.repository.AssetRepository
+import com.nagarlens.app.core.repository.AuthRepository
 import com.nagarlens.app.core.repository.EvidenceRepository
 import com.nagarlens.app.core.repository.InvestigationRepository
 import com.nagarlens.app.core.repository.SpatialRepository
@@ -37,6 +41,8 @@ import com.nagarlens.app.feature.profile.ProfileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -101,9 +107,10 @@ class FeatureViewModelsTest {
 
     @Test
     fun `profileViewModel initializes state with auditor identity`() {
+        val fakeAuthRepository = FakeAuthRepository()
         val fakeEvidenceRepository = FakeEvidenceRepository()
         val securityManager = SecurityHardeningManager()
-        val viewModel = ProfileViewModel(fakeEvidenceRepository, securityManager)
+        val viewModel = ProfileViewModel(fakeAuthRepository, fakeEvidenceRepository, securityManager)
         val state = viewModel.uiState.value
         assertNotNull(state.inspectorName)
         assertNotNull(state.assignedWard)
@@ -112,6 +119,22 @@ class FeatureViewModelsTest {
     private class FakeCameraXController : CameraXController(dummyContext())
     private class FakeLocationProvider : LocationProvider(dummyContext()) {
         override suspend fun getCurrentLocation(): LocationData? = null
+    }
+
+    private class FakeAuthRepository : AuthRepository {
+        private val session = UserSession(
+            userId = "U-1",
+            username = "admin",
+            fullName = "Admin Root Operator",
+            email = "admin@nagarlens.gov",
+            role = UserRole.SYSTEM_ADMINISTRATOR,
+            assignedWard = "Ward 12 — Bangalore Central"
+        )
+        override val authState: StateFlow<AuthState> = MutableStateFlow(AuthState.Authenticated(session))
+        override suspend fun login(username: String, password: String) = Result.success(session)
+        override suspend fun register(username: String, email: String, password: String, ward: String) = Result.success(session)
+        override suspend fun logout() {}
+        override suspend fun resetPassword(email: String) = Result.success(Unit)
     }
 
     private class FakeAssetRepository : AssetRepository {
