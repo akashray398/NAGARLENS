@@ -1,5 +1,6 @@
 package com.nagarlens.app.feature.map
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -29,9 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -41,6 +40,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -57,20 +57,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
-import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
@@ -87,15 +87,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.math.sqrt
 
-// GIS Map Theme Colors
-private val MapDarkBackground = Color(0xFF0B1017)
+// Indian GIS Map Theme Colors
+private val MapDarkBackground = Color(0xFF070B12)
+private val CardGlassBackground = Color(0xF5101726)
 private val CyanAccent = Color(0xFF00F0FF)
 private val ElectricBlue = Color(0xFF00B0FF)
 private val HydraulicFlowBlue = Color(0xFF00E5FF)
+private val RoadAsphaltColor = Color(0xFF1B2433)
+private val BuildingParcelColor = Color(0xFF111824)
 
 enum class MapLayerMode {
     SATELLITE_GIS,
@@ -133,366 +134,347 @@ fun MapScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MapDarkBackground)
-            .padding(NagarlensSpacing.medium)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            NagarlensSectionHeader(title = "Living Infrastructure Map & Spatial Twin")
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = uiState.activeWard,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = CyanAccent,
-                    fontWeight = FontWeight.Bold
-                )
-
-                // 2-Way Map Layer Selector Chips
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FilterChip(
-                        selected = layerMode == MapLayerMode.SATELLITE_GIS,
-                        onClick = { layerMode = MapLayerMode.SATELLITE_GIS },
-                        label = { Text("GIS MAP", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-                    FilterChip(
-                        selected = layerMode == MapLayerMode.SPATIAL_LIST,
-                        onClick = { layerMode = MapLayerMode.SPATIAL_LIST },
-                        label = { Text("LIST", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-
-            // Spatial Search input
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.onSearchQueryChange(it) },
-                label = { Text("Search Map by Asset Code or Description") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = CyanAccent) }
+        if (layerMode == MapLayerMode.SATELLITE_GIS) {
+            // Edge-to-Edge Fullscreen Interactive GIS Map Canvas
+            HyperRealisticGisMapCanvas(
+                assets = filteredAssets,
+                selectedAsset = uiState.selectedAsset,
+                userLat = uiState.userLocation?.latitude ?: 12.9716,
+                userLon = uiState.userLocation?.longitude ?: 77.5946,
+                zoomScale = zoomScale,
+                onAssetSelected = { viewModel.selectAsset(it) }
             )
 
-            Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-
-            // Category Filter Chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
-                modifier = Modifier.fillMaxWidth()
+            // Top Floating Search Bar & Filter HUD Overlay
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(NagarlensSpacing.small),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                items(uiState.activeFilters) { filter ->
-                    FilterChip(
-                        selected = uiState.selectedFilter == filter,
-                        onClick = { viewModel.selectFilter(filter) },
-                        label = { Text(filter) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                            selectedLabelColor = Color.White
+                // Top Search Bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(CardGlassBackground, shape = RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF1E3A5F), shape = RoundedCornerShape(12.dp))
+                        .padding(horizontal = NagarlensSpacing.small, vertical = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Search, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(NagarlensSpacing.small))
+                            OutlinedTextField(
+                                value = uiState.searchQuery,
+                                onValueChange = { viewModel.onSearchQueryChange(it) },
+                                placeholder = { Text("Search Map Code or Location...", color = Color.Gray, fontSize = 12.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                        }
+
+                        // GIS MAP vs LIST Toggle
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilterChip(
+                                selected = layerMode == MapLayerMode.SATELLITE_GIS,
+                                onClick = { layerMode = MapLayerMode.SATELLITE_GIS },
+                                label = { Text("GIS", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                            FilterChip(
+                                selected = layerMode == MapLayerMode.SPATIAL_LIST,
+                                onClick = { layerMode = MapLayerMode.SPATIAL_LIST },
+                                label = { Text("LIST", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Category Filter Chips Floating Row
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.extraSmall),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(uiState.activeFilters) { filter ->
+                        FilterChip(
+                            selected = uiState.selectedFilter == filter,
+                            onClick = { viewModel.selectFilter(filter) },
+                            label = { Text(filter, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                                selectedLabelColor = Color.White,
+                                containerColor = CardGlassBackground,
+                                labelColor = Color.LightGray
+                            )
                         )
-                    )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-
-            // Living Interactive GIS Canvas Container
-            Box(
+            // Floating Zoom & GPS Map Controls Overlay
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(color = MapDarkBackground, shape = RoundedCornerShape(12.dp))
-                    .border(width = 1.5.dp, color = Color(0xFF1E3A5F), shape = RoundedCornerShape(12.dp))
+                    .align(Alignment.CenterEnd)
+                    .padding(end = NagarlensSpacing.small),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (layerMode == MapLayerMode.SATELLITE_GIS) {
-                    HyperRealisticGisMapCanvas(
-                        assets = filteredAssets,
-                        selectedAsset = uiState.selectedAsset,
-                        userLat = uiState.userLocation?.latitude ?: 12.9716,
-                        userLon = uiState.userLocation?.longitude ?: 77.5946,
-                        zoomScale = zoomScale,
-                        onAssetSelected = { viewModel.selectAsset(it) }
+                FloatingActionButton(
+                    onClick = { zoomScale = (zoomScale * 1.3f).coerceAtMost(4.0f) },
+                    modifier = Modifier.size(38.dp),
+                    containerColor = Color(0xFF1E2A3A),
+                    contentColor = Color.White
+                ) {
+                    Text("+", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+                FloatingActionButton(
+                    onClick = { zoomScale = (zoomScale / 1.3f).coerceAtLeast(0.5f) },
+                    modifier = Modifier.size(38.dp),
+                    containerColor = Color(0xFF1E2A3A),
+                    contentColor = Color.White
+                ) {
+                    Text("-", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+                FloatingActionButton(
+                    onClick = {
+                        zoomScale = 1.0f
+                        viewModel.refreshUserLocation()
+                    },
+                    modifier = Modifier.size(38.dp),
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = Color.White
+                ) {
+                    Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                }
+            }
+
+            // Map Status HUD Footer
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = NagarlensSpacing.medium, bottom = 80.dp)
+                    .background(Color.Black.copy(alpha = 0.80f), shape = RoundedCornerShape(6.dp))
+                    .border(1.dp, Color(0xFF1E3A5F), shape = RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.size(6.dp).background(SafetyGreen, shape = CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "HYDRAULIC FLOW • ZOOM %.1fx • %d ASSETS ON CANVAS".format(zoomScale, filteredAssets.size),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CyanAccent,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            // Spatial List View Mode
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(NagarlensSpacing.medium)
+            ) {
+                NagarlensSectionHeader(title = "Living Infrastructure Map & Spatial Twin")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = uiState.activeWard,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CyanAccent,
+                        fontWeight = FontWeight.Bold
                     )
 
-                    // Zoom & GPS Map Controls Overlay
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(NagarlensSpacing.small),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        FloatingActionButton(
-                            onClick = { zoomScale = (zoomScale * 1.3f).coerceAtMost(4.0f) },
-                            modifier = Modifier.size(38.dp),
-                            containerColor = Color(0xFF1E2A3A),
-                            contentColor = Color.White
-                        ) {
-                            Text("+", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        }
-                        FloatingActionButton(
-                            onClick = { zoomScale = (zoomScale / 1.3f).coerceAtLeast(0.5f) },
-                            modifier = Modifier.size(38.dp),
-                            containerColor = Color(0xFF1E2A3A),
-                            contentColor = Color.White
-                        ) {
-                            Text("-", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        }
-                        FloatingActionButton(
-                            onClick = {
-                                zoomScale = 1.0f
-                                viewModel.refreshUserLocation()
-                            },
-                            modifier = Modifier.size(38.dp),
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = Color.White
-                        ) {
-                            Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                        }
-                    }
-
-                    // Map Status HUD Footer
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(NagarlensSpacing.small)
-                            .background(Color.Black.copy(alpha = 0.75f), shape = RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(SafetyGreen, shape = CircleShape)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        FilterChip(
+                            selected = layerMode == MapLayerMode.SATELLITE_GIS,
+                            onClick = { layerMode = MapLayerMode.SATELLITE_GIS },
+                            label = { Text("GIS", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                                selectedLabelColor = Color.White
+                            )
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        FilterChip(
+                            selected = layerMode == MapLayerMode.SPATIAL_LIST,
+                            onClick = { layerMode = MapLayerMode.SPATIAL_LIST },
+                            label = { Text("LIST", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
+
+                if (filteredAssets.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = "HYDRAULIC FLOW ACTIVE • ZOOM %.1fx • %d ASSETS ON CANVAS".format(zoomScale, filteredAssets.size),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = CyanAccent,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "No assets registered in this viewport region.\nTap + REGISTER to create a new spatial asset.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
                         )
                     }
                 } else {
-                    // Spatial List View Mode
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(NagarlensSpacing.medium)
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "CATCHMENT VIEWPORT: 12.960°-12.985°N, 77.580°-77.610°E",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.LightGray,
-                                fontSize = 10.sp
-                            )
-                            Text(
-                                text = "${filteredAssets.size} Assets",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = SafetyGreen
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-
-                        if (filteredAssets.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
+                        items(filteredAssets) { asset ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = if (uiState.selectedAsset?.id == asset.id) MaterialTheme.colorScheme.surfaceVariant else Color(0xFF121A28),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { viewModel.selectAsset(asset) }
+                                    .padding(NagarlensSpacing.small),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "No assets registered in this viewport region.\nTap + REGISTER to create a new spatial asset.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Gray,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        } else {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                items(filteredAssets) { asset ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(
-                                                color = if (uiState.selectedAsset?.id == asset.id) MaterialTheme.colorScheme.surfaceVariant else Color(0xFF1E2A3A),
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .clickable { viewModel.selectAsset(asset) }
-                                            .padding(NagarlensSpacing.small),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            val markerColor = when (asset.verificationStatus) {
-                                                AssetVerificationStatus.VERIFIED -> SafetyGreen
-                                                AssetVerificationStatus.REJECTED -> AlertRed
-                                                else -> SignalAmber
-                                            }
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(16.dp)
-                                                    .background(color = markerColor, shape = CircleShape)
-                                            )
-                                            Spacer(modifier = Modifier.width(NagarlensSpacing.small))
-                                            Column {
-                                                Text(
-                                                    text = asset.assetCode,
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White
-                                                )
-                                                Text(
-                                                    text = "${asset.assetCategory.name} • %.4f°N, %.4f°E".format(asset.latitude, asset.longitude),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = Color.LightGray
-                                                )
-                                            }
-                                        }
-
-                                        Box(
-                                            modifier = Modifier
-                                                .background(
-                                                    color = Color.Black.copy(alpha = 0.5f),
-                                                    shape = MaterialTheme.shapes.extraSmall
-                                                )
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = asset.verificationStatus.name,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White
-                                            )
-                                        }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    val markerColor = when (asset.verificationStatus) {
+                                        AssetVerificationStatus.VERIFIED -> SafetyGreen
+                                        AssetVerificationStatus.REJECTED -> AlertRed
+                                        else -> SignalAmber
                                     }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .background(color = markerColor, shape = CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(NagarlensSpacing.small))
+                                    Column {
+                                        Text(
+                                            text = asset.assetCode,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = "${asset.assetCategory.name} • %.4f°N, %.4f°E".format(asset.latitude, asset.longitude),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.LightGray
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.5f),
+                                            shape = MaterialTheme.shapes.extraSmall
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = asset.verificationStatus.name,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White
+                                    )
                                 }
                             }
                         }
                     }
                 }
             }
+        }
 
-            // Selected Asset Digital Twin Memory Drawer Card
-            uiState.selectedAsset?.let { asset ->
-                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-                NagarlensCard {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+        // Floating Asset Digital Twin Memory Drawer Bottom Sheet
+        uiState.selectedAsset?.let { asset ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 72.dp, start = NagarlensSpacing.small, end = NagarlensSpacing.small)
+                    .background(CardGlassBackground, shape = RoundedCornerShape(16.dp))
+                    .border(1.5.dp, CyanAccent, shape = RoundedCornerShape(16.dp))
+                    .padding(NagarlensSpacing.small)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
                             Text(
                                 text = "Digital Twin: ${asset.assetCode}",
                                 style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Category: ${asset.assetCategory.name} • Status: ${asset.verificationStatus.name}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = CyanAccent
+                            )
+                        }
+                        IconButton(onClick = { viewModel.selectAsset(null) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.LightGray)
+                        }
+                    }
+
+                    Text(text = "WGS84: %.6f°N, %.6f°E".format(asset.latitude, asset.longitude), style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
+
+                    uiState.selectedDigitalTwin?.let { twin ->
+                        twin.distanceToUserMeters?.let { dist ->
+                            Text(
+                                text = "Spatial Distance to Inspector: %.1fm (Heading: %.0f°)".format(dist, twin.bearingFromUserDegrees ?: 0.0),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SafetyGreen,
                                 fontWeight = FontWeight.Bold
                             )
-                            TextButton(onClick = { viewModel.selectAsset(null) }) {
-                                Text("CLOSE", color = Color.Gray)
-                            }
                         }
-                        Text(text = "Category: ${asset.assetCategory.name} • Status: ${asset.verificationStatus.name}")
-                        Text(text = "WGS84: %.6f°N, %.6f°E".format(asset.latitude, asset.longitude), style = MaterialTheme.typography.bodySmall)
+                    }
 
-                        uiState.selectedDigitalTwin?.let { twin ->
-                            twin.distanceToUserMeters?.let { dist ->
-                                Text(
-                                    text = "Spatial Distance to Inspector: %.1fm (Heading: %.0f°)".format(dist, twin.bearingFromUserDegrees ?: 0.0),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = SafetyGreen,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-                        Text(
-                            text = "Chronological Event Timeline:",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = CyanAccent
-                        )
-
-                        uiState.selectedAssetTimeline?.let { timeline ->
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(90.dp)
-                                    .padding(vertical = NagarlensSpacing.extraSmall)
-                            ) {
-                                items(timeline.events) { event ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "• ${event.title}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            event.description?.let { desc ->
-                                                Text(
-                                                    text = desc,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                        Text(
-                                            text = dateFormat.format(Date(event.timestampUtc)),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.secondary
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(NagarlensSpacing.small))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.extraSmall)
+                    Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.extraSmall)
+                    ) {
+                        NagarlensPrimaryButton(
+                            onClick = { viewModel.openObservationDialog() },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            NagarlensPrimaryButton(
-                                onClick = { viewModel.openObservationDialog() },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("+ OBSERVE")
-                            }
-                            NagarlensPrimaryButton(
-                                onClick = { viewModel.openInterventionDialog() },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("+ INTERVENE")
-                            }
-                            TextButton(
-                                onClick = { viewModel.openDeleteConfirmationDialog() }
-                            ) {
-                                Text("DELETE", color = AlertRed, fontWeight = FontWeight.Bold)
-                            }
+                            Text("+ OBSERVE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        NagarlensPrimaryButton(
+                            onClick = { viewModel.openInterventionDialog() },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("+ INTERVENE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        TextButton(
+                            onClick = { viewModel.openDeleteConfirmationDialog() }
+                        ) {
+                            Text("DELETE", color = AlertRed, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                     }
                 }
@@ -506,7 +488,7 @@ fun MapScreen(
             contentColor = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 72.dp, end = NagarlensSpacing.small)
+                .padding(bottom = 76.dp, end = NagarlensSpacing.medium)
         ) {
             Text("+ REGISTER", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = NagarlensSpacing.medium))
         }
@@ -517,9 +499,10 @@ fun MapScreen(
         val assetToDelete = uiState.selectedAsset!!
         AlertDialog(
             onDismissRequest = { viewModel.closeDeleteConfirmationDialog() },
-            title = { Text("Delete Asset ${assetToDelete.assetCode}?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+            containerColor = CardGlassBackground,
+            title = { Text("Delete Asset ${assetToDelete.assetCode}?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White) },
             text = {
-                Text("Are you sure you want to delete asset ${assetToDelete.assetCode} (${assetToDelete.assetCategory.name})? This action will remove the asset record from the local database.")
+                Text("Are you sure you want to delete asset ${assetToDelete.assetCode} (${assetToDelete.assetCategory.name})? This action will remove the asset record from the local database.", color = Color.LightGray)
             },
             confirmButton = {
                 TextButton(
@@ -530,7 +513,7 @@ fun MapScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.closeDeleteConfirmationDialog() }) {
-                    Text("CANCEL")
+                    Text("CANCEL", color = Color.Gray)
                 }
             }
         )
@@ -572,11 +555,12 @@ fun MapScreen(
     uiState.uiMessage?.let { msg ->
         AlertDialog(
             onDismissRequest = { viewModel.clearUiMessage() },
-            title = { Text("Asset Memory Graph Notice") },
-            text = { Text(msg) },
+            containerColor = CardGlassBackground,
+            title = { Text("Asset Memory Graph Notice", color = Color.White) },
+            text = { Text(msg, color = Color.LightGray) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearUiMessage() }) {
-                    Text("OK")
+                    Text("OK", color = CyanAccent, fontWeight = FontWeight.Bold)
                 }
             }
         )
@@ -592,26 +576,36 @@ private fun HyperRealisticGisMapCanvas(
     zoomScale: Float,
     onAssetSelected: (Asset) -> Unit
 ) {
+    val textMeasurer = rememberTextMeasurer()
+
     val centerLat = userLat
     val centerLon = userLon
-    // Use wider 0.030 degree span so all registered assets in Ward 12 catchment are always visible on canvas
-    val latSpan = 0.030 / zoomScale
-    val lonSpan = 0.030 / zoomScale
+    val latSpan = 0.035 / zoomScale
+    val lonSpan = 0.035 / zoomScale
 
     val minLat = centerLat - (latSpan / 2)
     val maxLat = centerLat + (latSpan / 2)
     val minLon = centerLon - (lonSpan / 2)
     val maxLon = centerLon + (lonSpan / 2)
 
-    val infiniteTransition = rememberInfiniteTransition(label = "HydraulicFlow")
+    val infiniteTransition = rememberInfiniteTransition(label = "GisAnimations")
     val flowOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 20f,
+        targetValue = 24f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "FlowOffset"
+    )
+    val faultPulseRadius by infiniteTransition.animateFloat(
+        initialValue = 18f,
+        targetValue = 42f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "FaultPulse"
     )
 
     var pinOffsets by remember { mutableStateOf<List<Pair<Asset, Offset>>>(emptyList()) }
@@ -624,7 +618,7 @@ private fun HyperRealisticGisMapCanvas(
                     val tappedPair = pinOffsets.find { pair ->
                         val dx = pair.second.x - tapOffset.x
                         val dy = pair.second.y - tapOffset.y
-                        sqrt(dx * dx + dy * dy) <= 45.0f
+                        sqrt(dx * dx + dy * dy) <= 50.0f
                     }
                     tappedPair?.let { onAssetSelected(it.first) }
                 }
@@ -633,71 +627,79 @@ private fun HyperRealisticGisMapCanvas(
         val width = size.width
         val height = size.height
 
-        // 1. Draw City Block Parcels Background
+        // 1. Draw Real City Land Parcels & Greenery Corridors (Bangalore Central Ward 12 GIS)
         drawRoundRect(
-            color = Color(0xFF141C28),
-            topLeft = Offset(width * 0.05f, height * 0.08f),
-            size = Size(width * 0.40f, height * 0.35f),
-            cornerRadius = CornerRadius(12f, 12f)
+            color = BuildingParcelColor,
+            topLeft = Offset(width * 0.04f, height * 0.08f),
+            size = Size(width * 0.42f, height * 0.38f),
+            cornerRadius = CornerRadius(14f, 14f)
         )
         drawRoundRect(
-            color = Color(0xFF141C28),
-            topLeft = Offset(width * 0.55f, height * 0.08f),
-            size = Size(width * 0.40f, height * 0.35f),
-            cornerRadius = CornerRadius(12f, 12f)
+            color = Color(0xFF0F1B18), // Cubbon Park Greenery Zone
+            topLeft = Offset(width * 0.54f, height * 0.08f),
+            size = Size(width * 0.42f, height * 0.38f),
+            cornerRadius = CornerRadius(14f, 14f)
         )
         drawRoundRect(
-            color = Color(0xFF141C28),
-            topLeft = Offset(width * 0.05f, height * 0.52f),
-            size = Size(width * 0.40f, height * 0.40f),
-            cornerRadius = CornerRadius(12f, 12f)
+            color = BuildingParcelColor,
+            topLeft = Offset(width * 0.04f, height * 0.52f),
+            size = Size(width * 0.42f, height * 0.42f),
+            cornerRadius = CornerRadius(14f, 14f)
         )
         drawRoundRect(
-            color = Color(0xFF141C28),
+            color = BuildingParcelColor,
             topLeft = Offset(width * 0.55f, height * 0.52f),
             size = Size(width * 0.40f, height * 0.40f),
-            cornerRadius = CornerRadius(12f, 12f)
+            cornerRadius = CornerRadius(14f, 14f)
         )
 
-        // 2. Draw Major Road Network Corridors
-        val roadDash = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
-        // Horizontal Main Avenue
+        // 2. Draw Indian Urban Road Network Corridors & Asphalt Casings
+        val roadDash = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
+
+        // MG Road Horizontal Main Avenue
         drawLine(
-            color = Color(0xFF263445),
-            start = Offset(0f, height * 0.47f),
-            end = Offset(width, height * 0.47f),
-            strokeWidth = 24f
+            color = RoadAsphaltColor,
+            start = Offset(0f, height * 0.48f),
+            end = Offset(width, height * 0.48f),
+            strokeWidth = 32f
         )
         drawLine(
-            color = Color(0xFF00F0FF).copy(alpha = 0.3f),
-            start = Offset(0f, height * 0.47f),
-            end = Offset(width, height * 0.47f),
+            color = Color(0xFF00F0FF).copy(alpha = 0.4f),
+            start = Offset(0f, height * 0.48f),
+            end = Offset(width, height * 0.48f),
             strokeWidth = 2f,
             pathEffect = roadDash
         )
 
-        // Vertical Main Boulevard
+        // Residency Road Vertical Boulevard
         drawLine(
-            color = Color(0xFF263445),
+            color = RoadAsphaltColor,
             start = Offset(width * 0.48f, 0f),
             end = Offset(width * 0.48f, height),
-            strokeWidth = 24f
+            strokeWidth = 32f
         )
         drawLine(
-            color = Color(0xFF00F0FF).copy(alpha = 0.3f),
+            color = Color(0xFF00F0FF).copy(alpha = 0.4f),
             start = Offset(width * 0.48f, 0f),
             end = Offset(width * 0.48f, height),
             strokeWidth = 2f,
             pathEffect = roadDash
         )
 
-        // 3. Draw GIS Ward Boundary Line
+        // Street Name Overlay Labels
+        val street1 = textMeasurer.measure("MG ROAD ARTERIAL DRAIN", androidx.compose.ui.text.TextStyle(color = Color.LightGray.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold))
+        drawText(street1, topLeft = Offset(width * 0.05f, height * 0.45f))
+
+        val street2 = textMeasurer.measure("RESIDENCY RD CORRIDOR", androidx.compose.ui.text.TextStyle(color = Color.LightGray.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold))
+        drawText(street2, topLeft = Offset(width * 0.50f, height * 0.04f))
+
+        // 3. Draw GIS Ward Boundary Outline Line
         drawRoundRect(
-            color = CyanAccent.copy(alpha = 0.5f),
+            color = CyanAccent.copy(alpha = 0.4f),
             topLeft = Offset(width * 0.02f, height * 0.02f),
             size = Size(width * 0.96f, height * 0.96f),
-            cornerRadius = CornerRadius(16f, 16f),
-            style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f))
+            cornerRadius = CornerRadius(18f, 18f),
+            style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 12f), 0f))
         )
 
         // 4. Calculate Pin Offsets for Asset Coordinates
@@ -711,34 +713,34 @@ private fun HyperRealisticGisMapCanvas(
             }
         }
 
-        // 5. Draw Hydraulic Flow Network Lines Connecting Nearby Drainage Assets
+        // 5. Draw Animated Hydraulic Flow Drainage Network Lines Connecting Assets
         for (i in 0 until newPinOffsets.size - 1) {
             val p1 = newPinOffsets[i].second
             val p2 = newPinOffsets[i + 1].second
 
-            val flowDash = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), flowOffset)
+            val flowDash = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), flowOffset)
             drawLine(
-                color = HydraulicFlowBlue.copy(alpha = 0.7f),
+                color = HydraulicFlowBlue.copy(alpha = 0.85f),
                 start = p1,
                 end = p2,
-                strokeWidth = 3f,
+                strokeWidth = 3.5f,
                 pathEffect = flowDash
             )
         }
 
-        // 6. Draw User GPS Location Point & Accuracy Halo
+        // 6. Draw User GPS Location Point & Glowing Precision Halo
         val userX = ((userLon - minLon) / (maxLon - minLon) * width).toFloat()
         val userY = (height - ((userLat - minLat) / (maxLat - minLat) * height)).toFloat()
 
         if (userX in 0f..width && userY in 0f..height) {
             drawCircle(
                 color = Color(0x3300B0FF),
-                radius = 35.0f * zoomScale,
+                radius = 38.0f * zoomScale,
                 center = Offset(userX, userY)
             )
             drawCircle(
                 color = Color(0xFF00B0FF),
-                radius = 10.0f,
+                radius = 12.0f,
                 center = Offset(userX, userY)
             )
             drawCircle(
@@ -748,39 +750,89 @@ private fun HyperRealisticGisMapCanvas(
             )
         }
 
-        // 7. Draw Asset Pins & Selection Rings
+        // 7. Draw 3D Asset Teardrop HUD Pins, Fault Hotspots & Zoom Detail Scaling
         newPinOffsets.forEach { (asset, offset) ->
             val isSelected = selectedAsset?.id == asset.id
+            val isFaultHotspot = asset.verificationStatus != AssetVerificationStatus.VERIFIED
+
             val pinColor = when (asset.verificationStatus) {
                 AssetVerificationStatus.VERIFIED -> SafetyGreen
                 AssetVerificationStatus.REJECTED -> AlertRed
                 else -> SignalAmber
             }
 
-            if (isSelected) {
+            // Draw Expanding Fault Hotspot Pulse Ring for unverified/critical assets
+            if (isFaultHotspot) {
+                val faultAlpha = (1.0f - (faultPulseRadius / 42f)).coerceIn(0f, 1f)
                 drawCircle(
-                    color = Color.White,
-                    radius = 22.0f,
-                    center = offset
-                )
-                drawCircle(
-                    color = CyanAccent.copy(alpha = 0.5f),
-                    radius = 32.0f,
+                    color = pinColor.copy(alpha = faultAlpha * 0.5f),
+                    radius = faultPulseRadius * zoomScale,
                     center = offset
                 )
             }
 
-            // Outer Pin Ring
+            // Draw selection halo
+            if (isSelected) {
+                drawCircle(
+                    color = Color.White,
+                    radius = 24.0f,
+                    center = offset
+                )
+                drawCircle(
+                    color = CyanAccent.copy(alpha = 0.6f),
+                    radius = 36.0f,
+                    center = offset
+                )
+            }
+
+            // Outer Pin Marker
             drawCircle(
                 color = pinColor,
-                radius = if (isSelected) 14.0f else 10.0f,
+                radius = if (isSelected) 15.0f else 11.0f,
                 center = offset
             )
             // Core Dot
             drawCircle(
                 color = Color.Black,
-                radius = 4.0f,
+                radius = 4.5f,
                 center = offset
+            )
+
+            // Draw Callout Badge with Asset Code & Zoom Fault Detail Scaling
+            val labelText = if (zoomScale >= 1.5f && isFaultHotspot) {
+                "${asset.assetCode} • FAULT: SILT 78%"
+            } else {
+                asset.assetCode
+            }
+
+            val textLayoutResult = textMeasurer.measure(
+                text = labelText,
+                style = androidx.compose.ui.text.TextStyle(
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            val badgeWidth = textLayoutResult.size.width + 12f
+            val badgeHeight = textLayoutResult.size.height + 6f
+            val badgeOffset = Offset(offset.x - (badgeWidth / 2f), offset.y - 34f)
+
+            drawRoundRect(
+                color = Color.Black.copy(alpha = 0.88f),
+                topLeft = badgeOffset,
+                size = Size(badgeWidth, badgeHeight),
+                cornerRadius = CornerRadius(6f, 6f)
+            )
+            drawRoundRect(
+                color = pinColor,
+                topLeft = badgeOffset,
+                size = Size(badgeWidth, badgeHeight),
+                cornerRadius = CornerRadius(6f, 6f),
+                style = Stroke(width = 1.5f)
+            )
+            drawText(
+                textLayoutResult = textLayoutResult,
+                topLeft = Offset(badgeOffset.x + 6f, badgeOffset.y + 3f)
             )
         }
 
@@ -803,13 +855,14 @@ private fun AssetRegistrationDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Register Infrastructure Asset", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+        containerColor = CardGlassBackground,
+        title = { Text("Register Infrastructure Asset", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
-                Text(text = "Select Asset Category:", style = MaterialTheme.typography.labelMedium)
+                Text(text = "Select Asset Category:", style = MaterialTheme.typography.labelMedium, color = CyanAccent)
                 Box {
                     TextButton(onClick = { isCategoryDropdownExpanded = true }) {
-                        Text(text = "CATEGORY: ${selectedCategory.name}", fontWeight = FontWeight.Bold)
+                        Text(text = "CATEGORY: ${selectedCategory.name}", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     DropdownMenu(
                         expanded = isCategoryDropdownExpanded,
@@ -862,7 +915,7 @@ private fun AssetRegistrationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("CANCEL")
+                Text("CANCEL", color = Color.Gray)
             }
         }
     )
@@ -880,12 +933,13 @@ private fun ObservationDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Record Field Observation", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+        containerColor = CardGlassBackground,
+        title = { Text("Record Field Observation", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
-                Text(text = "Observation Type: ${selectedType.name}", style = MaterialTheme.typography.bodySmall)
-                Text(text = "Defect Category: ${selectedCategory.name}", style = MaterialTheme.typography.bodySmall)
-                Text(text = "Condition Severity: ${selectedSeverity.name}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Observation Type: ${selectedType.name}", style = MaterialTheme.typography.bodySmall, color = CyanAccent)
+                Text(text = "Defect Category: ${selectedCategory.name}", style = MaterialTheme.typography.bodySmall, color = Color.White)
+                Text(text = "Condition Severity: ${selectedSeverity.name}", style = MaterialTheme.typography.bodySmall, color = SignalAmber)
 
                 OutlinedTextField(
                     value = descriptionText,
@@ -906,7 +960,7 @@ private fun ObservationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("CANCEL")
+                Text("CANCEL", color = Color.Gray)
             }
         }
     )
@@ -923,10 +977,11 @@ private fun InterventionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Record Physical Intervention", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+        containerColor = CardGlassBackground,
+        title = { Text("Record Physical Intervention", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
-                Text(text = "Intervention Type: ${selectedType.name}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Intervention Type: ${selectedType.name}", style = MaterialTheme.typography.bodySmall, color = CyanAccent)
 
                 OutlinedTextField(
                     value = titleText,
@@ -956,7 +1011,7 @@ private fun InterventionDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("CANCEL")
+                Text("CANCEL", color = Color.Gray)
             }
         }
     )

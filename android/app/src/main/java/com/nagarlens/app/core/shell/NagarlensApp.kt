@@ -20,14 +20,17 @@ fun NagarlensApp(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val currentDestination = NagarlensDestination.fromRoute(currentRoute)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             NagarlensTopAppBar(
-                title = currentDestination.title,
-                subtitle = "Infrastructure Intelligence Network"
+                onNotificationsClick = {
+                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                },
+                onProfileClick = {
+                    navController.navigate(NagarlensDestination.PROFILE.route)
+                }
             )
         },
         bottomBar = {
