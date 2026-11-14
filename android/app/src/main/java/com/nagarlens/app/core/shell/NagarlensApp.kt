@@ -27,9 +27,6 @@ fun NagarlensApp(
             NagarlensTopAppBar(
                 onNotificationsClick = {
                     navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
-                },
-                onProfileClick = {
-                    navController.navigate(NagarlensDestination.PROFILE.route)
                 }
             )
         },

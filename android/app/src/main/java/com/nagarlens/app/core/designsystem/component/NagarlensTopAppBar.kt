@@ -2,7 +2,6 @@ package com.nagarlens.app.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,8 +38,7 @@ private val CyanAccent = Color(0xFF00F0FF)
 @Composable
 fun NagarlensTopAppBar(
     modifier: Modifier = Modifier,
-    onNotificationsClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -94,43 +91,24 @@ fun NagarlensTopAppBar(
                 )
             }
 
-            // Top Action Items: Notifications + Profile Avatar
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            // Top Right Notifications Bell Action Item
+            IconButton(
+                onClick = onNotificationsClick,
+                modifier = Modifier.size(36.dp)
             ) {
-                IconButton(
-                    onClick = onNotificationsClick,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Box {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Alerts",
-                            tint = Color.LightGray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        // Notification Alert Dot
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .background(SignalAmber, shape = CircleShape)
-                                .align(Alignment.TopEnd)
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = onProfileClick,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(Color(0xFF1E2C3D), shape = CircleShape)
-                ) {
+                Box {
                     Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = CyanAccent,
-                        modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Alerts",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    // Notification Alert Dot
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .background(SignalAmber, shape = CircleShape)
+                            .align(Alignment.TopEnd)
                     )
                 }
             }

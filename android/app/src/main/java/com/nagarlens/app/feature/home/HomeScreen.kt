@@ -33,14 +33,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
@@ -89,8 +85,7 @@ fun HomeScreen(
     onNavigateToMap: () -> Unit = {},
     onNavigateToCapture: () -> Unit = {},
     onNavigateToAnalytics: () -> Unit = {},
-    onNavigateToIncidents: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToIncidents: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -105,8 +100,7 @@ fun HomeScreen(
         // Section 1 — Premium Top Header
         TopHeaderSection(
             locationBadge = uiState.locationBadge,
-            tagline = uiState.tagline,
-            onProfileClick = onNavigateToProfile
+            tagline = uiState.tagline
         )
 
         // Section 2 — Main Living City Engine Canvas Centerpiece
@@ -235,8 +229,7 @@ fun HomeScreen(
 @Composable
 private fun TopHeaderSection(
     locationBadge: String,
-    tagline: String,
-    onProfileClick: () -> Unit
+    tagline: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -246,11 +239,11 @@ private fun TopHeaderSection(
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "NAGARLENS",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = CyanAccent,
+                    text = "LIVING CITY ENGINE",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+                    letterSpacing = 1.2.sp
                 )
                 Spacer(modifier = Modifier.width(NagarlensSpacing.small))
                 // Live Location Badge
@@ -281,21 +274,6 @@ private fun TopHeaderSection(
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray,
                 fontSize = 11.sp
-            )
-        }
-
-        IconButton(
-            onClick = onProfileClick,
-            modifier = Modifier
-                .size(40.dp)
-                .background(Color(0xFF1E2A3A), shape = CircleShape)
-                .border(1.dp, CyanGlowBorder, shape = CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Auditor Profile",
-                tint = CyanAccent,
-                modifier = Modifier.size(22.dp)
             )
         }
     }
