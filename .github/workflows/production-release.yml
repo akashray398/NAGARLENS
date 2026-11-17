@@ -23,8 +23,9 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e "./backend[dev]"
+          python -m pip install --upgrade pip setuptools wheel
+          cd backend
+          pip install -e ".[dev]"
 
       - name: Execute Backend Pytest Suite
         run: |
@@ -40,10 +41,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "17"
           distribution: "temurin"
+
+      - name: Grant Executable Permissions for Gradle Wrapper
+        run: chmod +x android/gradlew
 
       - name: Setup Gradle Cache
         uses: actions/cache@v4
@@ -58,12 +62,12 @@ jobs:
       - name: Execute Android Unit Tests
         run: |
           cd android
-          ./gradlew testDebugUnitTest
+          ./gradlew testDebugUnitTest --no-daemon
 
       - name: Build Debug & Release APKs
         run: |
           cd android
-          ./gradlew assembleDebug assembleRelease
+          ./gradlew assembleDebug assembleRelease --no-daemon
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
