@@ -23,10 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -52,7 +49,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
@@ -61,7 +57,6 @@ import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
 import com.nagarlens.app.core.designsystem.theme.SignalAmber
 
-// Living City Dark Theme Colors
 private val DarkCityBackground = Color(0xFF0B0F17)
 private val HolographicCardBackground = Color(0xFF121824)
 private val CyanAccent = Color(0xFF00F0FF)
@@ -83,11 +78,11 @@ fun ProfileScreen(
             .background(DarkCityBackground)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = NagarlensSpacing.medium, vertical = NagarlensSpacing.small),
-        verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)
+        verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.medium)
     ) {
         NagarlensSectionHeader(title = "Settings & Persona Governance")
 
-        // Multi-Role Persona Switcher Bar
+        // 1. Role Persona Switcher Chips Bar
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -95,22 +90,24 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "ACTIVE PERSONA ACCOUNT:",
+                    text = "ACTIVE PERSONA ACCOUNT",
                     style = MaterialTheme.typography.labelSmall,
                     color = CyanAccent,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(onClick = { isRoleLoginDialogOpen = true }) {
-                        Text("LOGIN AS ROLE", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("LOGIN ROLE", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     TextButton(onClick = { isRegisterAccountDialogOpen = true }) {
-                        Text("+ NEW ACCOUNT", color = SafetyGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("+ NEW USER", color = SafetyGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(2.dp))
+
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -118,9 +115,9 @@ fun ProfileScreen(
                 items(UserRolePersona.entries) { persona ->
                     val isSelected = uiState.activeRolePersona == persona
                     val labelText = when (persona) {
-                        UserRolePersona.CITIZEN_USER -> "CITIZEN USER"
-                        UserRolePersona.FIELD_INSPECTOR -> "FIELD INSPECTOR"
-                        UserRolePersona.REVIEWER_ADMIN -> "REVIEWER ADMIN"
+                        UserRolePersona.CITIZEN_USER -> "CITIZEN"
+                        UserRolePersona.FIELD_INSPECTOR -> "INSPECTOR"
+                        UserRolePersona.REVIEWER_ADMIN -> "REVIEWER"
                         UserRolePersona.SYSTEM_ADMINISTRATOR -> "SYS ADMIN (YOU)"
                     }
 
@@ -139,19 +136,19 @@ fun ProfileScreen(
             }
         }
 
-        // Executive Identity Card
+        // 2. Clean Executive Identity Card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
-                .border(1.dp, CyanGlowBorder, shape = RoundedCornerShape(12.dp))
-                .padding(NagarlensSpacing.small)
+                .background(HolographicCardBackground, shape = RoundedCornerShape(14.dp))
+                .border(1.dp, CyanGlowBorder, shape = RoundedCornerShape(14.dp))
+                .padding(NagarlensSpacing.medium)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -159,7 +156,7 @@ fun ProfileScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(48.dp)
                                 .background(color = MaterialTheme.colorScheme.secondary, shape = CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
@@ -167,7 +164,7 @@ fun ProfileScreen(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "Avatar",
                                 tint = Color.White,
-                                modifier = Modifier.size(26.dp)
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(NagarlensSpacing.small))
@@ -189,8 +186,8 @@ fun ProfileScreen(
 
                     Box(
                         modifier = Modifier
-                            .background(SafetyGreen, shape = MaterialTheme.shapes.extraSmall)
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .background(SafetyGreen, shape = RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = "VERIFIED",
@@ -202,12 +199,12 @@ fun ProfileScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
+                Spacer(modifier = Modifier.height(NagarlensSpacing.small))
                 Text(
                     text = "Email: ${uiState.userEmail} • Token: ${uiState.badgeTokenId}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.LightGray,
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 )
                 Text(
                     text = "Jurisdiction: ${uiState.assignedWard}",
@@ -217,7 +214,7 @@ fun ProfileScreen(
                     fontSize = 11.sp
                 )
                 Text(
-                    text = "RBAC Security Clearance: ${uiState.securityRole}",
+                    text = "RBAC Clearance: ${uiState.securityRole}",
                     style = MaterialTheme.typography.labelSmall,
                     color = SignalAmber,
                     fontWeight = FontWeight.Bold,
@@ -226,7 +223,7 @@ fun ProfileScreen(
             }
         }
 
-        // Persona-Specific Feature Capabilities Panel
+        // 3. Persona Capability Panel
         PersonaFeaturesPanel(
             persona = uiState.activeRolePersona,
             apiEndpointUrl = uiState.apiEndpointUrl,
@@ -234,7 +231,7 @@ fun ProfileScreen(
             onExportAuditLog = { viewModel.exportAuditLog() }
         )
 
-        // Real-Time User Activity Journey Inspector (For You as System Administrator)
+        // 4. Real-Time User Activity Journey Inspector (For System Admin YOU)
         if (uiState.activeRolePersona == UserRolePersona.SYSTEM_ADMINISTRATOR) {
             Box(
                 modifier = Modifier
@@ -255,7 +252,7 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "REAL-TIME USER JOURNEY INSPECTOR (ADMIN)",
+                            text = "REAL-TIME USER JOURNEY INSPECTOR",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = CyanAccent
@@ -265,13 +262,13 @@ fun ProfileScreen(
                                 .background(SafetyGreen, shape = RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text("LIVE STREAM", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                            Text("LIVE", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Inspect real-time field journeys, evidence capture events, and work order dispatches in the network:",
+                        text = "Inspect real-time field journeys and evidence capture events in the network:",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.LightGray,
                         fontSize = 10.sp
@@ -315,7 +312,7 @@ fun ProfileScreen(
             }
         }
 
-        // System Security & Telemetry Panel
+        // 5. System Preferences & Network Toggles
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -325,22 +322,35 @@ fun ProfileScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Active Security & Telemetry Engine",
+                    text = "System Preferences",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
                 )
 
-                Spacer(modifier = Modifier.height(NagarlensSpacing.extraSmall))
-                TelemetryRow(label = "SHA-256 Media Digest Engine", status = "ACTIVE", color = SafetyGreen)
-                TelemetryRow(label = "AI PII Privacy Blurring Filter", status = if (uiState.isPiiPrivacyBlurActive) "AUTO-REDACTING" else "DISABLED", color = if (uiState.isPiiPrivacyBlurActive) SafetyGreen else SignalAmber)
-                TelemetryRow(label = "Fused GNSS Precision Lock", status = "±3.2m (GPS+Galileo)", color = SafetyGreen)
-                TelemetryRow(label = "Room SQLite Database v5", status = "ENCRYPTED & ISOLATED", color = SafetyGreen)
-                TelemetryRow(label = "Cloud Transport Security", status = "TLS 1.3 (api.nagarlens.gov)", color = SafetyGreen)
+                Spacer(modifier = Modifier.height(4.dp))
+                TogglePreferenceRow(
+                    title = "Low Data Mode (3G/4G)",
+                    subtitle = "Compress field imagery before network sync",
+                    isChecked = uiState.isLowDataCompressionEnabled,
+                    onCheckedChange = { viewModel.toggleLowDataCompression(it) }
+                )
+                TogglePreferenceRow(
+                    title = "Geofenced Risk Warnings",
+                    subtitle = "Receive push alerts for high-risk catchments",
+                    isChecked = uiState.isEarlyWarningPushEnabled,
+                    onCheckedChange = { viewModel.toggleEarlyWarningPush(it) }
+                )
+                TogglePreferenceRow(
+                    title = "AI Privacy PII Auto-Redact",
+                    subtitle = "Automatically blur bystander faces & plates",
+                    isChecked = uiState.isPiiPrivacyBlurActive,
+                    onCheckedChange = { viewModel.togglePiiPrivacyBlur(it) }
+                )
             }
         }
 
-        // Offline Field Storage & Cache Operations
+        // 6. Offline Storage & Sync Operations
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -350,7 +360,7 @@ fun ProfileScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Offline Field Storage & Cache Operations",
+                    text = "Offline Field Storage & Cache",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
@@ -394,45 +404,7 @@ fun ProfileScreen(
             }
         }
 
-        // Advanced System Preferences & Toggles
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(HolographicCardBackground, shape = RoundedCornerShape(12.dp))
-                .border(1.dp, DarkCardBorder, shape = RoundedCornerShape(12.dp))
-                .padding(NagarlensSpacing.small)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "System & Network Preferences",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-                TogglePreferenceRow(
-                    title = "Low Data Compression Mode",
-                    subtitle = "Compress field imagery before 3G/4G network sync",
-                    isChecked = uiState.isLowDataCompressionEnabled,
-                    onCheckedChange = { viewModel.toggleLowDataCompression(it) }
-                )
-                TogglePreferenceRow(
-                    title = "Geofenced Early Warning Alerts",
-                    subtitle = "Receive push warnings for high-risk drainage catchments",
-                    isChecked = uiState.isEarlyWarningPushEnabled,
-                    onCheckedChange = { viewModel.toggleEarlyWarningPush(it) }
-                )
-                TogglePreferenceRow(
-                    title = "AI Privacy PII Auto-Redaction",
-                    subtitle = "Automatically blur bystander faces & license plates",
-                    isChecked = uiState.isPiiPrivacyBlurActive,
-                    onCheckedChange = { viewModel.togglePiiPrivacyBlur(it) }
-                )
-            }
-        }
-
-        // Security Session Governance & Sign Out
+        // 7. Security Session Governance & Sign Out
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -442,13 +414,13 @@ fun ProfileScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Security Session Governance",
+                    text = "Security Session",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = AlertRed
                 )
                 Text(
-                    text = "Session active with short-lived JWT token rotation. Signing out zeros tokens from memory.",
+                    text = "Signing out clears active JWT session tokens permanently.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.LightGray,
                     fontSize = 10.sp
@@ -459,12 +431,12 @@ fun ProfileScreen(
                     onClick = { viewModel.logoutSession() },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = "SECURITY SIGN OUT / ZERO TOKENS", color = AlertRed, fontWeight = FontWeight.Bold)
+                    Text(text = "SIGN OUT / ZERO TOKENS", color = AlertRed, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // Version & Build Provenance
+        // Version Footnote
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -481,25 +453,19 @@ fun ProfileScreen(
                 color = Color.Gray,
                 fontSize = 10.sp
             )
-            Text(
-                text = "Spatial CRS: WGS84 (EPSG:4326) • PostGIS 3.4 Engine",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray,
-                fontSize = 10.sp
-            )
         }
 
         Spacer(modifier = Modifier.height(88.dp))
     }
 
-    // 1-Tap Quick Role Login Dialog
+    // Role Login Dialog
     if (isRoleLoginDialogOpen) {
         AlertDialog(
             onDismissRequest = { isRoleLoginDialogOpen = false },
             containerColor = HolographicCardBackground,
             title = {
                 Text(
-                    text = "Role Authenticated Login",
+                    text = "Select Account Role",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -507,45 +473,36 @@ fun ProfileScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
-                    Text(
-                        text = "Select a role persona to log in and unlock permission capabilities:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.LightGray
-                    )
-
                     RoleSelectCard(
                         title = "👑 System Administrator (YOU)",
-                        description = "Full RBAC control, real-time user journey inspection, PostGIS DB migrations, export SHA-256 audit logs.",
+                        description = "Full RBAC control, real-time user journey inspector, DB migrations, audit logs.",
                         color = CyanAccent,
                         onClick = {
                             viewModel.loginRealTimeUser("admin", "admin_pass", UserRolePersona.SYSTEM_ADMINISTRATOR)
                             isRoleLoginDialogOpen = false
                         }
                     )
-
                     RoleSelectCard(
                         title = "🛡️ Municipal Reviewer",
-                        description = "Asset verification (APPROVE/REJECT), incident dispatch, risk score overrides.",
+                        description = "Asset verification (APPROVE/REJECT), work order dispatch.",
                         color = SignalAmber,
                         onClick = {
                             viewModel.loginRealTimeUser("reviewer", "reviewer_pass", UserRolePersona.REVIEWER_ADMIN)
                             isRoleLoginDialogOpen = false
                         }
                     )
-
                     RoleSelectCard(
                         title = "👷 Field Auditor / Inspector",
-                        description = "CameraX reality capture, SHA-256 digests, offline Room queue, GNSS locking.",
+                        description = "CameraX capture, SHA-256 digests, offline Room queue.",
                         color = SafetyGreen,
                         onClick = {
                             viewModel.loginRealTimeUser("auditor_central", "inspector_pass", UserRolePersona.FIELD_INSPECTOR)
                             isRoleLoginDialogOpen = false
                         }
                     )
-
                     RoleSelectCard(
                         title = "👤 Citizen User",
-                        description = "Report local waterlogging defects, track status, view geofenced alerts.",
+                        description = "Report local waterlogging defects, track status, view alerts.",
                         color = Color.LightGray,
                         onClick = {
                             viewModel.loginRealTimeUser("citizen", "citizen_pass", UserRolePersona.CITIZEN_USER)
@@ -562,7 +519,7 @@ fun ProfileScreen(
         )
     }
 
-    // Register New Account Dialog
+    // Register Account Dialog
     if (isRegisterAccountDialogOpen) {
         var newUsername by remember { mutableStateOf("") }
         var newEmail by remember { mutableStateOf("") }
