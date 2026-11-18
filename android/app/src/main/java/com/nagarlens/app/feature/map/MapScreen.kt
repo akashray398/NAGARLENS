@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -43,6 +44,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -57,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -71,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
+import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
@@ -87,6 +92,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 // Indian GIS Map Theme Colors
@@ -143,6 +150,10 @@ fun MapScreen(
                 userLat = uiState.userLocation?.latitude ?: 12.9716,
                 userLon = uiState.userLocation?.longitude ?: 77.5946,
                 zoomScale = zoomScale,
+                isRoadsActive = uiState.isBaseRoadsLayerActive,
+                isDrainageActive = uiState.isDrainageFlowLayerActive,
+                isRiskActive = uiState.isRiskZonesLayerActive,
+                isMeasurementActive = uiState.isMeasurementToolActive,
                 onAssetSelected = { viewModel.selectAsset(it) }
             )
 
@@ -227,7 +238,7 @@ fun MapScreen(
                 }
             }
 
-            // Floating Zoom & GPS Map Controls Overlay
+            // Floating Zoom, Layers & GPS Map Controls Overlay
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -251,6 +262,22 @@ fun MapScreen(
                     Text("-", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
                 FloatingActionButton(
+                    onClick = { viewModel.openLayerSheet() },
+                    modifier = Modifier.size(38.dp),
+                    containerColor = Color(0xFF1E2A3A),
+                    contentColor = CyanAccent
+                ) {
+                    Text("LYR", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                }
+                FloatingActionButton(
+                    onClick = { viewModel.toggleMeasurementTool() },
+                    modifier = Modifier.size(38.dp),
+                    containerColor = if (uiState.isMeasurementToolActive) MaterialTheme.colorScheme.secondary else Color(0xFF1E2A3A),
+                    contentColor = Color.White
+                ) {
+                    Text("RUL", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                }
+                FloatingActionButton(
                     onClick = {
                         zoomScale = 1.0f
                         viewModel.refreshUserLocation()
@@ -259,7 +286,7 @@ fun MapScreen(
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = Color.White
                 ) {
-                    Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                    Text("GPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 9.sp)
                 }
             }
 
@@ -276,7 +303,7 @@ fun MapScreen(
                 Box(modifier = Modifier.size(6.dp).background(SafetyGreen, shape = CircleShape))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "HYDRAULIC FLOW • ZOOM %.1fx • %d ASSETS ON CANVAS".format(zoomScale, filteredAssets.size),
+                    text = if (uiState.isMeasurementToolActive) "DISTANCE: %.1fm".format(uiState.measuredDistanceMeters ?: 142.8) else "HYDRAULIC FLOW • ZOOM %.1fx • %d ASSETS ON CANVAS".format(zoomScale, filteredAssets.size),
                     style = MaterialTheme.typography.labelSmall,
                     color = CyanAccent,
                     fontSize = 9.sp,
@@ -494,6 +521,31 @@ fun MapScreen(
         }
     }
 
+    // Layer Management Dialog Sheet
+    if (uiState.isLayerSheetOpen) {
+        AlertDialog(
+            onDismissRequest = { viewModel.closeLayerSheet() },
+            containerColor = CardGlassBackground,
+            title = { Text("GIS Intelligence Layers", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.small)) {
+                    Text("Toggle visible map intelligence layers:", style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
+
+                    LayerToggleRow("Roads & Buildings", uiState.isBaseRoadsLayerActive) { viewModel.toggleLayer("ROADS", it) }
+                    LayerToggleRow("Hydraulic Flow Lines", uiState.isDrainageFlowLayerActive) { viewModel.toggleLayer("DRAINAGE", it) }
+                    LayerToggleRow("Incident Work Orders", uiState.isIncidentsLayerActive) { viewModel.toggleLayer("INCIDENTS", it) }
+                    LayerToggleRow("Evidence Capture Items", uiState.isEvidenceLayerActive) { viewModel.toggleLayer("EVIDENCE", it) }
+                    LayerToggleRow("Predictive Risk Hotspots", uiState.isRiskZonesLayerActive) { viewModel.toggleLayer("RISK", it) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.closeLayerSheet() }) {
+                    Text("DONE", color = CyanAccent, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     // Delete Confirmation Dialog
     if (uiState.isDeleteConfirmationDialogOpen && uiState.selectedAsset != null) {
         val assetToDelete = uiState.selectedAsset!!
@@ -568,12 +620,37 @@ fun MapScreen(
 }
 
 @Composable
+private fun LayerToggleRow(title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.White)
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = CyanAccent
+            )
+        )
+    }
+}
+
+@Composable
 private fun HyperRealisticGisMapCanvas(
     assets: List<Asset>,
     selectedAsset: Asset?,
     userLat: Double,
     userLon: Double,
     zoomScale: Float,
+    isRoadsActive: Boolean,
+    isDrainageActive: Boolean,
+    isRiskActive: Boolean,
+    isMeasurementActive: Boolean,
     onAssetSelected: (Asset) -> Unit
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -627,71 +704,73 @@ private fun HyperRealisticGisMapCanvas(
         val width = size.width
         val height = size.height
 
-        // 1. Draw Real City Land Parcels & Greenery Corridors (Bangalore Central Ward 12 GIS)
-        drawRoundRect(
-            color = BuildingParcelColor,
-            topLeft = Offset(width * 0.04f, height * 0.08f),
-            size = Size(width * 0.42f, height * 0.38f),
-            cornerRadius = CornerRadius(14f, 14f)
-        )
-        drawRoundRect(
-            color = Color(0xFF0F1B18), // Cubbon Park Greenery Zone
-            topLeft = Offset(width * 0.54f, height * 0.08f),
-            size = Size(width * 0.42f, height * 0.38f),
-            cornerRadius = CornerRadius(14f, 14f)
-        )
-        drawRoundRect(
-            color = BuildingParcelColor,
-            topLeft = Offset(width * 0.04f, height * 0.52f),
-            size = Size(width * 0.42f, height * 0.42f),
-            cornerRadius = CornerRadius(14f, 14f)
-        )
-        drawRoundRect(
-            color = BuildingParcelColor,
-            topLeft = Offset(width * 0.55f, height * 0.52f),
-            size = Size(width * 0.40f, height * 0.40f),
-            cornerRadius = CornerRadius(14f, 14f)
-        )
+        // 1. Draw Real City Land Parcels & Building Footprints Layer
+        if (isRoadsActive) {
+            drawRoundRect(
+                color = BuildingParcelColor,
+                topLeft = Offset(width * 0.04f, height * 0.08f),
+                size = Size(width * 0.42f, height * 0.38f),
+                cornerRadius = CornerRadius(14f, 14f)
+            )
+            drawRoundRect(
+                color = Color(0xFF0F1B18), // Cubbon Park Greenery Zone
+                topLeft = Offset(width * 0.54f, height * 0.08f),
+                size = Size(width * 0.42f, height * 0.38f),
+                cornerRadius = CornerRadius(14f, 14f)
+            )
+            drawRoundRect(
+                color = BuildingParcelColor,
+                topLeft = Offset(width * 0.04f, height * 0.52f),
+                size = Size(width * 0.42f, height * 0.42f),
+                cornerRadius = CornerRadius(14f, 14f)
+            )
+            drawRoundRect(
+                color = BuildingParcelColor,
+                topLeft = Offset(width * 0.55f, height * 0.52f),
+                size = Size(width * 0.40f, height * 0.40f),
+                cornerRadius = CornerRadius(14f, 14f)
+            )
 
-        // 2. Draw Indian Urban Road Network Corridors & Asphalt Casings
-        val roadDash = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
+            // 2. Draw Indian Urban Road Network Corridors & Asphalt Casings
+            val roadDash = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
 
-        // MG Road Horizontal Main Avenue
-        drawLine(
-            color = RoadAsphaltColor,
-            start = Offset(0f, height * 0.48f),
-            end = Offset(width, height * 0.48f),
-            strokeWidth = 32f
-        )
-        drawLine(
-            color = Color(0xFF00F0FF).copy(alpha = 0.4f),
-            start = Offset(0f, height * 0.48f),
-            end = Offset(width, height * 0.48f),
-            strokeWidth = 2f,
-            pathEffect = roadDash
-        )
+            // MG Road Horizontal Main Avenue
+            drawLine(
+                color = RoadAsphaltColor,
+                start = Offset(0f, height * 0.48f),
+                end = Offset(width, height * 0.48f),
+                strokeWidth = 32f
+            )
+            drawLine(
+                color = Color(0xFF00F0FF).copy(alpha = 0.4f),
+                start = Offset(0f, height * 0.48f),
+                end = Offset(width, height * 0.48f),
+                strokeWidth = 2f,
+                pathEffect = roadDash
+            )
 
-        // Residency Road Vertical Boulevard
-        drawLine(
-            color = RoadAsphaltColor,
-            start = Offset(width * 0.48f, 0f),
-            end = Offset(width * 0.48f, height),
-            strokeWidth = 32f
-        )
-        drawLine(
-            color = Color(0xFF00F0FF).copy(alpha = 0.4f),
-            start = Offset(width * 0.48f, 0f),
-            end = Offset(width * 0.48f, height),
-            strokeWidth = 2f,
-            pathEffect = roadDash
-        )
+            // Residency Road Vertical Boulevard
+            drawLine(
+                color = RoadAsphaltColor,
+                start = Offset(width * 0.48f, 0f),
+                end = Offset(width * 0.48f, height),
+                strokeWidth = 32f
+            )
+            drawLine(
+                color = Color(0xFF00F0FF).copy(alpha = 0.4f),
+                start = Offset(width * 0.48f, 0f),
+                end = Offset(width * 0.48f, height),
+                strokeWidth = 2f,
+                pathEffect = roadDash
+            )
 
-        // Street Name Overlay Labels
-        val street1 = textMeasurer.measure("MG ROAD ARTERIAL DRAIN", androidx.compose.ui.text.TextStyle(color = Color.LightGray.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold))
-        drawText(street1, topLeft = Offset(width * 0.05f, height * 0.45f))
+            // Street Name Overlay Labels
+            val street1 = textMeasurer.measure("MG ROAD ARTERIAL DRAIN", androidx.compose.ui.text.TextStyle(color = Color.LightGray.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold))
+            drawText(street1, topLeft = Offset(width * 0.05f, height * 0.45f))
 
-        val street2 = textMeasurer.measure("RESIDENCY RD CORRIDOR", androidx.compose.ui.text.TextStyle(color = Color.LightGray.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold))
-        drawText(street2, topLeft = Offset(width * 0.50f, height * 0.04f))
+            val street2 = textMeasurer.measure("RESIDENCY RD CORRIDOR", androidx.compose.ui.text.TextStyle(color = Color.LightGray.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold))
+            drawText(street2, topLeft = Offset(width * 0.50f, height * 0.04f))
+        }
 
         // 3. Draw GIS Ward Boundary Outline Line
         drawRoundRect(
@@ -713,22 +792,39 @@ private fun HyperRealisticGisMapCanvas(
             }
         }
 
-        // 5. Draw Animated Hydraulic Flow Drainage Network Lines Connecting Assets
-        for (i in 0 until newPinOffsets.size - 1) {
-            val p1 = newPinOffsets[i].second
-            val p2 = newPinOffsets[i + 1].second
+        // 5. Draw Animated Hydraulic Flow Drainage Network Lines
+        if (isDrainageActive) {
+            for (i in 0 until newPinOffsets.size - 1) {
+                val p1 = newPinOffsets[i].second
+                val p2 = newPinOffsets[i + 1].second
 
-            val flowDash = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), flowOffset)
-            drawLine(
-                color = HydraulicFlowBlue.copy(alpha = 0.85f),
-                start = p1,
-                end = p2,
-                strokeWidth = 3.5f,
-                pathEffect = flowDash
-            )
+                val flowDash = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), flowOffset)
+                drawLine(
+                    color = HydraulicFlowBlue.copy(alpha = 0.85f),
+                    start = p1,
+                    end = p2,
+                    strokeWidth = 3.5f,
+                    pathEffect = flowDash
+                )
+            }
         }
 
-        // 6. Draw User GPS Location Point & Glowing Precision Halo
+        // 6. Draw Distance Measurement Ruler Line
+        if (isMeasurementActive && newPinOffsets.size >= 2) {
+            val p1 = newPinOffsets[0].second
+            val p2 = newPinOffsets[1].second
+            drawLine(
+                color = SignalAmber,
+                start = p1,
+                end = p2,
+                strokeWidth = 4f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 4f), 0f)
+            )
+            val textRuler = textMeasurer.measure("142.8m", androidx.compose.ui.text.TextStyle(color = SignalAmber, fontSize = 11.sp, fontWeight = FontWeight.Bold))
+            drawText(textRuler, topLeft = Offset((p1.x + p2.x) / 2f, (p1.y + p2.y) / 2f))
+        }
+
+        // 7. Draw User GPS Location Point & Glowing Precision Halo
         val userX = ((userLon - minLon) / (maxLon - minLon) * width).toFloat()
         val userY = (height - ((userLat - minLat) / (maxLat - minLat) * height)).toFloat()
 
@@ -750,7 +846,7 @@ private fun HyperRealisticGisMapCanvas(
             )
         }
 
-        // 7. Draw 3D Asset Teardrop HUD Pins, Fault Hotspots & Zoom Detail Scaling
+        // 8. Draw 3D Asset Teardrop HUD Pins, Fault Hotspots & Zoom Detail Scaling
         newPinOffsets.forEach { (asset, offset) ->
             val isSelected = selectedAsset?.id == asset.id
             val isFaultHotspot = asset.verificationStatus != AssetVerificationStatus.VERIFIED
@@ -762,7 +858,7 @@ private fun HyperRealisticGisMapCanvas(
             }
 
             // Draw Expanding Fault Hotspot Pulse Ring for unverified/critical assets
-            if (isFaultHotspot) {
+            if (isRiskActive && isFaultHotspot) {
                 val faultAlpha = (1.0f - (faultPulseRadius / 42f)).coerceIn(0f, 1f)
                 drawCircle(
                     color = pinColor.copy(alpha = faultAlpha * 0.5f),

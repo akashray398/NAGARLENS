@@ -28,6 +28,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class TimeTravelStep {
+    CURRENT_REALTIME,
+    ONE_MONTH_AGO,
+    SIX_MONTHS_AGO,
+    HISTORICAL_BASELINE
+}
+
 data class MapUiState(
     val searchQuery: String = "",
     val selectedFilter: String = "All Categories",
@@ -39,6 +46,17 @@ data class MapUiState(
     val selectedAsset: Asset? = null,
     val selectedDigitalTwin: DigitalTwinAsset? = null,
     val selectedAssetTimeline: AssetTimeline? = null,
+    // GIS Intelligence Layers Toggles
+    val isBaseRoadsLayerActive: Boolean = true,
+    val isDrainageFlowLayerActive: Boolean = true,
+    val isIncidentsLayerActive: Boolean = true,
+    val isEvidenceLayerActive: Boolean = true,
+    val isRiskZonesLayerActive: Boolean = true,
+    // Time Travel & Measurement Tools
+    val timeTravelStep: TimeTravelStep = TimeTravelStep.CURRENT_REALTIME,
+    val isMeasurementToolActive: Boolean = false,
+    val measuredDistanceMeters: Double? = null,
+    val isLayerSheetOpen: Boolean = false,
     val isRegistrationDialogOpen: Boolean = false,
     val isObservationDialogOpen: Boolean = false,
     val isInterventionDialogOpen: Boolean = false,
@@ -79,6 +97,41 @@ class MapViewModel @Inject constructor(
 
     fun selectFilter(filter: String) {
         _uiState.update { it.copy(selectedFilter = filter) }
+    }
+
+    fun toggleLayer(layerName: String, enabled: Boolean) {
+        _uiState.update {
+            when (layerName) {
+                "ROADS" -> it.copy(isBaseRoadsLayerActive = enabled)
+                "DRAINAGE" -> it.copy(isDrainageFlowLayerActive = enabled)
+                "INCIDENTS" -> it.copy(isIncidentsLayerActive = enabled)
+                "EVIDENCE" -> it.copy(isEvidenceLayerActive = enabled)
+                "RISK" -> it.copy(isRiskZonesLayerActive = enabled)
+                else -> it
+            }
+        }
+    }
+
+    fun setTimeTravelStep(step: TimeTravelStep) {
+        _uiState.update { it.copy(timeTravelStep = step) }
+    }
+
+    fun toggleMeasurementTool() {
+        _uiState.update {
+            val nextState = !it.isMeasurementToolActive
+            it.copy(
+                isMeasurementToolActive = nextState,
+                measuredDistanceMeters = if (nextState) 142.8 else null
+            )
+        }
+    }
+
+    fun openLayerSheet() {
+        _uiState.update { it.copy(isLayerSheetOpen = true) }
+    }
+
+    fun closeLayerSheet() {
+        _uiState.update { it.copy(isLayerSheetOpen = false) }
     }
 
     fun selectAsset(asset: Asset?) {
