@@ -3,16 +3,21 @@ package com.nagarlens.app.feature.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nagarlens.app.core.model.NotificationItem
+import com.nagarlens.app.core.model.NotificationSeverity
 import com.nagarlens.app.core.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class NotificationsUiState(
     val notifications: List<NotificationItem> = emptyList(),
+    val selectedFilter: String = "ALL",
+    val activeFilters: List<String> = listOf("ALL", "UNREAD", "CRITICAL", "WARNING"),
     val unreadCount: Int = 0
 )
 
@@ -26,15 +31,19 @@ class NotificationsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            notificationRepository.observeAllNotifications().collect { list ->
-                _uiState.value = _uiState.value.copy(notifications = list)
+            notificationRepository.observeAllNotifications().collectLatest { list ->
+                _uiState.update { it.copy(notifications = list) }
             }
         }
         viewModelScope.launch {
-            notificationRepository.observeUnreadCount().collect { count ->
-                _uiState.value = _uiState.value.copy(unreadCount = count)
+            notificationRepository.observeUnreadCount().collectLatest { count ->
+                _uiState.update { it.copy(unreadCount = count) }
             }
         }
+    }
+
+    fun selectFilter(filter: String) {
+        _uiState.update { it.copy(selectedFilter = filter) }
     }
 
     fun markAsRead(id: String) {
