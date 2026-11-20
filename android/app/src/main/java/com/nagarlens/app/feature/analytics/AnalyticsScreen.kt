@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
-import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
 import com.nagarlens.app.core.designsystem.theme.SignalAmber
@@ -43,8 +42,6 @@ fun AnalyticsScreen(
             .verticalScroll(rememberScrollState())
             .padding(NagarlensSpacing.medium)
     ) {
-        NagarlensSectionHeader(title = "Infrastructure Analytics & Health Metrics")
-
         // Time range filter chips
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(NagarlensSpacing.small),

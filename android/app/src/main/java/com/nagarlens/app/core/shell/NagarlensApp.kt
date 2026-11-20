@@ -42,11 +42,73 @@ fun NagarlensApp(
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    NagarlensTopAppBar(
-                        onNotificationsClick = {
-                            navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                    // Pinned Fixed Non-Scrollable Top Bar customized for every screen
+                    when (currentRoute) {
+                        NagarlensDestination.HOME.route -> {
+                            NagarlensTopAppBar(
+                                title = "NAGARLENS",
+                                subtitle = "Infrastructure Intelligence Network",
+                                showOnlineStatus = true,
+                                onNotificationsClick = {
+                                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                                }
+                            )
                         }
-                    )
+                        NagarlensDestination.MAP.route -> {
+                            NagarlensTopAppBar(
+                                title = "Living Map & Spatial Twin",
+                                subtitle = "Ward 12 — Bangalore Central",
+                                onNotificationsClick = {
+                                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                                }
+                            )
+                        }
+                        NagarlensDestination.INCIDENTS.route -> {
+                            NagarlensTopAppBar(
+                                title = "Municipal Incidents & Work Orders",
+                                subtitle = "Emergency Work Order Dispatch",
+                                onNotificationsClick = {
+                                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                                }
+                            )
+                        }
+                        NagarlensDestination.PROFILE.route -> {
+                            NagarlensTopAppBar(
+                                title = "Settings & Persona Governance",
+                                subtitle = "RBAC Security Clearance",
+                                onNotificationsClick = {
+                                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                                }
+                            )
+                        }
+                        NagarlensDestination.ACTIVITY.route -> {
+                            NagarlensTopAppBar(
+                                title = "Evidence Audit Trail",
+                                subtitle = "SHA-256 Reality Captures",
+                                onNotificationsClick = {
+                                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                                }
+                            )
+                        }
+                        NagarlensDestination.ANALYTICS.route -> {
+                            NagarlensTopAppBar(
+                                title = "Intelligence Analytics",
+                                subtitle = "City Infrastructure Metrics",
+                                onNotificationsClick = {
+                                    navController.navigate(NagarlensDestination.NOTIFICATIONS.route)
+                                }
+                            )
+                        }
+                        NagarlensDestination.NOTIFICATIONS.route -> {
+                            NagarlensTopAppBar(
+                                title = "Alerts & System Notifications",
+                                subtitle = "Real-Time Infrastructure Feeds",
+                                onNotificationsClick = {}
+                            )
+                        }
+                        // Camera capture mode has topBar = null for 100% viewfinder space
+                        else -> {}
+                    }
                 },
                 bottomBar = {
                     NagarlensBottomNavigationBar(

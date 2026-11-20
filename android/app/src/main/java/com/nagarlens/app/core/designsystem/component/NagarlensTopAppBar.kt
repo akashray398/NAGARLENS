@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +36,9 @@ private val CyanAccent = Color(0xFF00F0FF)
 
 @Composable
 fun NagarlensTopAppBar(
+    title: String = "NAGARLENS",
+    subtitle: String? = "Infrastructure Intelligence Network",
+    showOnlineStatus: Boolean = false,
     modifier: Modifier = Modifier,
     onNotificationsClick: () -> Unit = {}
 ) {
@@ -45,7 +47,6 @@ fun NagarlensTopAppBar(
             .fillMaxWidth()
             .background(TopBarBackground)
             .border(width = 1.dp, color = BorderColor)
-            .statusBarsPadding()
             .padding(horizontal = NagarlensSpacing.medium, vertical = NagarlensSpacing.small)
     ) {
         Row(
@@ -56,39 +57,43 @@ fun NagarlensTopAppBar(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "NAGARLENS",
+                        text = title,
                         style = MaterialTheme.typography.titleLarge,
-                        color = CyanAccent,
+                        color = if (title == "NAGARLENS") CyanAccent else Color.White,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.8.sp
+                        letterSpacing = if (title == "NAGARLENS") 1.8.sp else 0.5.sp
                     )
-                    Spacer(modifier = Modifier.width(NagarlensSpacing.small))
-                    // Online Status Badge
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFF1A2638), shape = RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFF26384D), shape = RoundedCornerShape(12.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(6.dp).background(SafetyGreen, shape = CircleShape))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "ONLINE",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                    if (showOnlineStatus) {
+                        Spacer(modifier = Modifier.width(NagarlensSpacing.small))
+                        // Online Status Badge
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFF1A2638), shape = RoundedCornerShape(12.dp))
+                                .border(1.dp, Color(0xFF26384D), shape = RoundedCornerShape(12.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(6.dp).background(SafetyGreen, shape = CircleShape))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "ONLINE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
-                Text(
-                    text = "Infrastructure Intelligence Network",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.LightGray,
-                    fontSize = 10.sp
-                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.LightGray,
+                        fontSize = 10.sp
+                    )
+                }
             }
 
             // Top Right Notifications Bell Action Item

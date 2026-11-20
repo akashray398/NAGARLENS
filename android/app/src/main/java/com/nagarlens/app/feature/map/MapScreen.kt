@@ -76,7 +76,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
-import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
@@ -317,8 +316,6 @@ fun MapScreen(
                     .fillMaxSize()
                     .padding(NagarlensSpacing.medium)
             ) {
-                NagarlensSectionHeader(title = "Living Infrastructure Map & Spatial Twin")
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

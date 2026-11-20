@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensCard
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
-import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
@@ -68,8 +67,6 @@ fun ActivityScreen(
             .fillMaxSize()
             .padding(NagarlensSpacing.medium)
     ) {
-        NagarlensSectionHeader(title = "Investigation Command & Evidence Sync")
-
         // Active Investigation Command Center Section
         if (uiState.investigationsList.isNotEmpty()) {
             NagarlensCard(containerColor = Color(0xFF1E242B)) {

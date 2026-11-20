@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nagarlens.app.core.designsystem.component.NagarlensPrimaryButton
 import com.nagarlens.app.core.designsystem.component.NagarlensSecondaryButton
-import com.nagarlens.app.core.designsystem.component.NagarlensSectionHeader
 import com.nagarlens.app.core.designsystem.theme.AlertRed
 import com.nagarlens.app.core.designsystem.theme.NagarlensSpacing
 import com.nagarlens.app.core.designsystem.theme.SafetyGreen
@@ -80,8 +79,6 @@ fun ProfileScreen(
             .padding(horizontal = NagarlensSpacing.medium, vertical = NagarlensSpacing.small),
         verticalArrangement = Arrangement.spacedBy(NagarlensSpacing.medium)
     ) {
-        NagarlensSectionHeader(title = "Settings & Persona Governance")
-
         // 1. Role Persona Switcher Chips Bar
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
